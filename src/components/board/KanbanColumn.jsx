@@ -1,38 +1,39 @@
 import TaskCard from "./TaskCard";
-import { colAccentClass } from "../../utils/kanbanUtils";
+
+function colAccent(col) {
+  if (col.isFinal) return "border-t-emerald-400";
+  const l = col.label.toLowerCase();
+  if (l.includes("active") || l.includes("progress")) return "border-t-amber-400";
+  if (l.includes("review") || l.includes("verification")) return "border-t-purple-400";
+  if (l.includes("blocked") || l.includes("failed")) return "border-t-red-400";
+  return "border-t-gray-300";
+}
 
 /**
  * KanbanColumn
- * Renders one column of the board. The card list div is exposed via
- * colRef so the parent (KanbanBoard) can attach a SortableJS instance to it.
- *
- * Props:
- *   col         — { key, title, isFinal, isDefault }
- *   tasks       — array of task objects belonging to this column
- *   colRef      — callback ref: el => void  (passed down from KanbanBoard)
- *   onCardClick — fn(task) passed through to each TaskCard
+ * Width is w-60 (240px) — slightly narrower than before to show more columns
+ * on screen before the user needs to scroll.
  */
 export default function KanbanColumn({ col, tasks, colRef, onCardClick }) {
-  const accentClass = colAccentClass(col);
-
   return (
     <div
-      className={`shrink-0 w-64 bg-white rounded-2xl shadow-sm border-t-4 ${accentClass}`}
-      // className={`shrink-0 w-full bg-white rounded-2xl shadow-sm border-t-4 ${accentClass}`}
+      className={`shrink-0 w-60 bg-white rounded-2xl shadow-sm border-t-4 ${colAccent(col)}`}
     >
-      {/* Column header */}
-      <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-        <span className="text-sm font-semibold text-gray-700">{col.title}</span>
-        <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5 font-medium">
+      {/* Header */}
+      <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+        <span className="text-sm font-semibold text-gray-700 truncate pr-2">
+          {col.label}
+        </span>
+        <span className="shrink-0 text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5 font-medium">
           {tasks.length}
         </span>
       </div>
 
-      {/* Droppable card list — SortableJS attaches here via colRef */}
+      {/* Droppable area */}
       <div
         ref={colRef}
-        data-col={col.key}
-        className="px-3 pb-4 space-y-2 min-h-32"
+        data-col={col.id}
+        className="px-2 pb-3 space-y-2 min-h-32"
       >
         {tasks.map((task) => (
           <TaskCard key={task.id} task={task} onCardClick={onCardClick} />

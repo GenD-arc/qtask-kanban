@@ -4,9 +4,9 @@ export const uid = () => String(Date.now() + Math.random());
 /** Severity badge color config */
 export const SEVERITY_COLORS = {
   Critical: { text: "#991b1b", bg: "#fee2e2" },
-  High: { text: "#92400e", bg: "#fef3c7" },
-  Medium: { text: "#1e40af", bg: "#dbeafe" },
-  Low: { text: "#374151", bg: "#f3f4f6" },
+  High:     { text: "#92400e", bg: "#fef3c7" },
+  Medium:   { text: "#1e40af", bg: "#dbeafe" },
+  Low:      { text: "#374151", bg: "#f3f4f6" },
 };
 
 /**
@@ -14,9 +14,9 @@ export const SEVERITY_COLORS = {
  * Falls back gracefully for custom user-added columns.
  */
 export const colAccentClass = (col) => {
-  if (col.isFinal) return "border-t-emerald-400";
+  if (col.isFinal)              return "border-t-emerald-400";
   if (col.key === "inProgress") return "border-t-amber-400";
-  if (col.key === "forReview") return "border-t-purple-400";
+  if (col.key === "forReview")  return "border-t-purple-400";
   return "border-t-gray-300";
 };
 
@@ -32,12 +32,17 @@ export const formatShortDate = (dateStr) => {
 };
 
 /**
- * Calculate task progress from subtasks.
- * SRS §3.4: (Completed Subtasks / Total Subtasks) * 100
- * Returns null if there are no subtasks (manual progress is used instead).
+ * Calculate progress from subtasks — SRS §3.4.
+ * Supports both field names:
+ *   isDone — returned by the Express API (MySQL column name)
+ *   done   — used in legacy local-only state
+ *
+ * Returns null if there are no subtasks (caller should fall back to
+ * task.progress instead).
  */
 export const calcProgressFromSubtasks = (subtasks) => {
   if (!subtasks || subtasks.length === 0) return null;
-  const done = subtasks.filter((s) => s.done).length;
-  return Math.round((done / subtasks.length) * 100);
+  // Accept either isDone (DB) or done (local legacy)
+  const doneCount = subtasks.filter((s) => s.isDone || s.done).length;
+  return Math.round((doneCount / subtasks.length) * 100);
 };

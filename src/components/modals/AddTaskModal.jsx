@@ -1,44 +1,39 @@
 import { useState } from "react";
-import { uid } from "../../utils/kanbanUtils";
-
-const EMPTY_FORM = {
-  name: "",
-  description: "",
-  severity: "Medium",
-  assignee: "",
-  targetDate: "",
-};
 
 /**
  * AddTaskModal
- * Form for creating a new task. The created task always lands in the
- * column where isDefault === true (handled by the parent).
+ * Creates a new task via the API.
+ * Receives `users` and `statuses` from App so dropdowns are dynamic.
  *
  * Props:
- *   onAdd   — fn(task) called with the new task object on submit
- *   onClose — fn() called when the modal should be dismissed
+ *   onAdd    — fn(payload) where payload is sent directly to POST /api/tasks
+ *   onClose  — fn()
+ *   users    — user objects from the DB [{ id, name, username, role }]
+ *   statuses — status objects from the DB [{ id, label, isDefault }]
  */
-export default function AddTaskModal({ onAdd, onClose }) {
-  const [form, setForm] = useState(EMPTY_FORM);
+export default function AddTaskModal({ onAdd, onClose, users = [], statuses = [] }) {
+  const defaultStatus = statuses.find((s) => s.isDefault) ?? statuses[0];
 
-  const setField = (key, value) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
+  const [form, setForm] = useState({
+    title:      "",
+    description:"",
+    statusId:   defaultStatus?.id ?? "",
+    assigneeId: "",
+    targetDate: "",
+  });
+
+  const set = (k, v) => setForm((prev) => ({ ...prev, [k]: v }));
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.name.trim()) return;
+    if (!form.title.trim()) return;
     onAdd({
-      id: uid(),
-      progress: 0,
-      actualEndDate: null,
-      ...form,
+      title:       form.title.trim(),
+      description: form.description.trim() || null,
+      statusId:    form.statusId   ? Number(form.statusId)   : undefined,
+      assigneeId:  form.assigneeId ? Number(form.assigneeId) : null,
+      targetDate:  form.targetDate || null,
     });
-  };
-
-  // Function to get today's date in 'YYYY-MM-DD' format
-  const getTodayDateString = () => {
-    const today = new Date();
-    return today.toISOString().split("T")[0]; // Splits the ISO string "YYYY-MM-DDTHH:mm:ss.sssZ" and returns the date part
   };
 
   return (
@@ -49,13 +44,11 @@ export default function AddTaskModal({ onAdd, onClose }) {
         <form onSubmit={handleSubmit} className="space-y-3">
           {/* Title */}
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Title *
-            </label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Title *</label>
             <input
               autoFocus
-              value={form.name}
-              onChange={(e) => setField("name", e.target.value)}
+              value={form.title}
+              onChange={(e) => set("title", e.target.value)}
               placeholder="Task title"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
               required
@@ -64,76 +57,38 @@ export default function AddTaskModal({ onAdd, onClose }) {
 
           {/* Description */}
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Description
-            </label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Description</label>
             <textarea
-              type="text"
-              autoComplete="off"
               value={form.description}
-              onChange={(e) => setField("description", e.target.value)}
-              placeholder="Task Description"
-              className="w-full h-25 resize-none border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
+              onChange={(e) => set("description", e.target.value)}
+              placeholder="Optional description"
+              rows={2}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 resize-none"
             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {/* Severity */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Severity
-              </label>
-              <select
-                value={form.severity}
-                onChange={(e) => setField("severity", e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
-              >
-                {["Critical", "High", "Medium", "Low"].map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Phase */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Phase
-              </label>
-              <select
-                value={form.severity}
-                onChange={(e) => setField("severity", e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
-              >
-                {["Development", "Testing"].map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </div>
           </div>
 
           {/* Assignee */}
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Assignee
-            </label>
-            <input
-              value={form.assignee}
-              onChange={(e) => setField("assignee", e.target.value)}
-              placeholder="e.g. Carlo"
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Assignee</label>
+            <select
+              value={form.assigneeId}
+              onChange={(e) => set("assigneeId", e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
-            />
+            >
+              <option value="">Unassigned</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+              ))}
+            </select>
           </div>
 
           {/* Target date */}
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Target date
-            </label>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Target date</label>
             <input
               type="date"
-              min={getTodayDateString()}
               value={form.targetDate}
-              onChange={(e) => setField("targetDate", e.target.value)}
+              onChange={(e) => set("targetDate", e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
             />
           </div>
@@ -143,13 +98,13 @@ export default function AddTaskModal({ onAdd, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition cursor-pointer"
+              className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition cursor-pointer"
+              className="px-4 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
             >
               Add task
             </button>

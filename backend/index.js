@@ -2,23 +2,40 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
-app.use(cors());
+
+app.use(cors({
+  origin: "http://localhost:5173", // Vite dev server
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  allowedHeaders: ["Content-Type"],
+}));
 app.use(express.json());
 
-// import routes
+// ── Routes ───────────────────────────────────────────────────
 const registerRouter = require("./routes/register");
-const loginRouter = require("./routes/login");
+const loginRouter    = require("./routes/login");
+const statusesRouter = require("./routes/statuses");
+const tasksRouter    = require("./routes/tasks");
+const usersRouter    = require("./routes/users");
 
-// use routes
 app.use("/api/register", registerRouter);
-app.use("/api/login", loginRouter);
+app.use("/api/login",    loginRouter);
+app.use("/api/statuses", statusesRouter);
+app.use("/api/tasks",    tasksRouter);
+app.use("/api/users",    usersRouter);
 
-// routes
+// ── Health check ─────────────────────────────────────────────
 app.get("/", (req, res) => {
-  res.send("Welcome to QTask API");
+  res.json({ message: "Q-Task API is running", version: "1.0.0" });
 });
 
-// listen
-app.listen(5000, () => {
-  console.log("Server is running on port 5000");
+// ── Global error handler ─────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ message: "Internal server error" });
+});
+
+// ── Start server ─────────────────────────────────────────────
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Q-Task API running on http://localhost:${PORT}`);
 });
