@@ -18,7 +18,7 @@ async function getTaskById(id) {
      LEFT JOIN severities sv ON t.severityId = sv.id
      LEFT JOIN users      u  ON t.assigneeId = u.id
      WHERE t.id = ?`,
-    [id]
+    [id],
   );
   if (rows.length === 0) return null;
   const task = rows[0];
@@ -26,13 +26,13 @@ async function getTaskById(id) {
   // Attach subtasks
   const [subtasks] = await pool.query(
     "SELECT id, title, isDone FROM subtasks WHERE taskId = ? ORDER BY id ASC",
-    [id]
+    [id],
   );
   task.subtasks = subtasks;
   return task;
 }
 
-// ─── GET /api/tasks ──────────────────────────────────────────────────────────
+// ─── GET /api/tasks ─────────────────────────────────────────────────────────
 // Returns all tasks with joined status, phase, severity, assignee, subtasks.
 router.get("/", async (req, res) => {
   try {
@@ -49,14 +49,14 @@ router.get("/", async (req, res) => {
        LEFT JOIN phases     p  ON t.phaseId    = p.id
        LEFT JOIN severities sv ON t.severityId = sv.id
        LEFT JOIN users      u  ON t.assigneeId = u.id
-       ORDER BY t.createdAt DESC`
+       ORDER BY t.createdAt DESC`,
     );
 
     // Attach subtasks to each task
     for (const task of rows) {
       const [subtasks] = await pool.query(
         "SELECT id, title, isDone FROM subtasks WHERE taskId = ? ORDER BY id ASC",
-        [task.id]
+        [task.id],
       );
       task.subtasks = subtasks;
     }
@@ -71,7 +71,15 @@ router.get("/", async (req, res) => {
 // ─── POST /api/tasks ─────────────────────────────────────────────────────────
 // Creates a new task. Status defaults to the isDefault status if not provided.
 router.post("/", async (req, res) => {
-  const { title, description, statusId, phaseId, severityId, assigneeId, targetDate } = req.body;
+  const {
+    title,
+    description,
+    statusId,
+    phaseId,
+    severityId,
+    assigneeId,
+    targetDate,
+  } = req.body;
 
   if (!title?.trim())
     return res.status(400).json({ message: "Title is required" });
@@ -81,10 +89,12 @@ router.post("/", async (req, res) => {
     let resolvedStatusId = statusId;
     if (!resolvedStatusId) {
       const [defaults] = await pool.query(
-        "SELECT id FROM statuses WHERE isDefault = 1 LIMIT 1"
+        "SELECT id FROM statuses WHERE isDefault = 1 LIMIT 1",
       );
       if (defaults.length === 0)
-        return res.status(500).json({ message: "No default status configured" });
+        return res
+          .status(500)
+          .json({ message: "No default status configured" });
       resolvedStatusId = defaults[0].id;
     }
 
@@ -99,13 +109,13 @@ router.post("/", async (req, res) => {
         severityId ?? null,
         assigneeId ?? null,
         targetDate ?? null,
-      ]
+      ],
     );
 
     // Log creation
     await pool.query(
       "INSERT INTO activity_logs (taskId, action) VALUES (?, ?)",
-      [result.insertId, "Task created"]
+      [result.insertId, "Task created"],
     );
 
     const task = await getTaskById(result.insertId);
@@ -131,7 +141,7 @@ router.patch("/:id/status", async (req, res) => {
     // Fetch current task for audit log
     const [current] = await pool.query(
       "SELECT t.statusId, s.label AS oldLabel FROM tasks t LEFT JOIN statuses s ON t.statusId = s.id WHERE t.id = ?",
-      [id]
+      [id],
     );
     if (current.length === 0)
       return res.status(404).json({ message: "Task not found" });
@@ -139,7 +149,7 @@ router.patch("/:id/status", async (req, res) => {
     // Fetch new status label and isFinal flag
     const [newStatus] = await pool.query(
       "SELECT label, isFinal FROM statuses WHERE id = ?",
-      [statusId]
+      [statusId],
     );
     if (newStatus.length === 0)
       return res.status(404).json({ message: "Status not found" });
@@ -149,22 +159,25 @@ router.patch("/:id/status", async (req, res) => {
     // Build update query
     const updates = { statusId };
     if (isFinal) {
-      updates.actualEndDate = actualEndDate ?? new Date().toISOString().split("T")[0];
+      updates.actualEndDate =
+        actualEndDate ?? new Date().toISOString().split("T")[0];
       updates.progress = 100;
     }
 
     await pool.query(
       `UPDATE tasks SET statusId = ?, actualEndDate = ?, progress = CASE WHEN ? = 1 THEN 100 ELSE progress END WHERE id = ?`,
-      [statusId, updates.actualEndDate ?? null, isFinal ? 1 : 0, id]
+      [statusId, updates.actualEndDate ?? null, isFinal ? 1 : 0, id],
     );
 
     // Write to audit log (SRS §5.1)
     const logAction = `Status changed from "${current[0].oldLabel}" to "${newStatus[0].label}"${
-      isFinal && updates.actualEndDate ? ` — Actual End Date: ${updates.actualEndDate}` : ""
+      isFinal && updates.actualEndDate
+        ? ` — Actual End Date: ${updates.actualEndDate}`
+        : ""
     }`;
     await pool.query(
       "INSERT INTO activity_logs (taskId, action) VALUES (?, ?)",
-      [id, logAction]
+      [id, logAction],
     );
 
     const task = await getTaskById(id);
@@ -192,16 +205,19 @@ router.patch("/:id/subtasks", async (req, res) => {
     for (const s of subtasks) {
       await pool.query(
         "INSERT INTO subtasks (taskId, title, isDone) VALUES (?, ?, ?)",
-        [id, s.title, s.isDone ? 1 : 0]
+        [id, s.title, s.isDone ? 1 : 0],
       );
     }
 
     // Recalculate progress (SRS §3.4)
     const total = subtasks.length;
-    const done  = subtasks.filter((s) => s.isDone).length;
+    const done = subtasks.filter((s) => s.isDone).length;
     const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
-    await pool.query("UPDATE tasks SET progress = ? WHERE id = ?", [progress, id]);
+    await pool.query("UPDATE tasks SET progress = ? WHERE id = ?", [
+      progress,
+      id,
+    ]);
 
     const task = await getTaskById(id);
     res.json(task);
@@ -215,17 +231,26 @@ router.patch("/:id/subtasks", async (req, res) => {
 // Full update of task fields (edit form).
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
-  const { title, description, phaseId, severityId, assigneeId, targetDate } = req.body;
+  const { title, description, phaseId, severityId, assigneeId, targetDate } =
+    req.body;
 
   try {
     await pool.query(
       `UPDATE tasks SET title = ?, description = ?, phaseId = ?, severityId = ?, assigneeId = ?, targetDate = ? WHERE id = ?`,
-      [title, description ?? null, phaseId ?? null, severityId ?? null, assigneeId ?? null, targetDate ?? null, id]
+      [
+        title,
+        description ?? null,
+        phaseId ?? null,
+        severityId ?? null,
+        assigneeId ?? null,
+        targetDate ?? null,
+        id,
+      ],
     );
 
     await pool.query(
       "INSERT INTO activity_logs (taskId, action) VALUES (?, ?)",
-      [id, "Task details updated"]
+      [id, "Task details updated"],
     );
 
     const task = await getTaskById(id);

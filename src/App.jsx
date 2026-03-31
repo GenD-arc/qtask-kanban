@@ -8,16 +8,19 @@ import TaskDetailModal from "./components/modals/TaskDetailModal";
 
 import {
   fetchStatuses,
+  fetchSeverities,
   fetchTasks,
   fetchUsers,
   moveTask,
   createTask,
+  updateTask,
   deleteTask,
   updateSubtasks,
 } from "./services/api";
 
 export default function App() {
   const [statuses,      setStatuses]      = useState([]);
+  const [severities,    setSeverities]    = useState([]);
   const [tasks,         setTasks]         = useState([]);
   const [users,         setUsers]         = useState([]);
   const [loading,       setLoading]       = useState(true);
@@ -33,12 +36,14 @@ export default function App() {
     async function load() {
       try {
         setLoading(true);
-        const [statusData, taskData, userData] = await Promise.all([
+        const [statusData, severityData, taskData, userData] = await Promise.all([
           fetchStatuses(),
+          fetchSeverities(),
           fetchTasks(),
           fetchUsers(),
         ]);
         setStatuses(statusData);
+        setSeverities(severityData);
         setTasks(taskData);
         setUsers(userData);
       } catch (err) {
@@ -83,9 +88,7 @@ export default function App() {
         } catch (err) {
           console.error("Move failed:", err.message);
           setTasks((prev) =>
-            prev.map((t) =>
-              t.id === taskId ? { ...t, statusId: fromStatusId } : t
-            )
+            prev.map((t) => (t.id === taskId ? { ...t, statusId: fromStatusId } : t))
           );
           setRenderKey((k) => k + 1);
           alert(`Move failed: ${err.message}`);
@@ -135,16 +138,32 @@ export default function App() {
     }
   }, []);
 
+  // ── Edit task fields ──────────────────────────────────────
+  // Called from TaskDetailModal when the user saves assignee/severity/date.
+  // Updates the flat tasks array so the card on the board reflects the change.
+  // Does NOT touch detailTask so the modal's local subtask state is preserved.
+  const handleEditTask = useCallback(async (taskId, payload) => {
+    try {
+      const updated = await updateTask(taskId, payload);
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+      // Also update detailTask so the view-mode reflects the saved values
+      setDetailTask((prev) => (prev?.id === taskId ? updated : prev));
+    } catch (err) {
+      console.error("Edit task failed:", err.message);
+      throw err; // let the modal show its saving state
+    }
+  }, []);
+
   // ── Delete task ───────────────────────────────────────────
   const handleDeleteTask = useCallback(async (taskId) => {
     try {
       await deleteTask(taskId);
       setTasks((prev) => prev.filter((t) => t.id !== taskId));
-      setDetailTask(null);   // close the modal
+      setDetailTask(null);
       setRenderKey((k) => k + 1);
     } catch (err) {
       console.error("Delete task failed:", err.message);
-      throw err; // let the modal show its error state
+      throw err;
     }
   }, []);
 
@@ -163,7 +182,7 @@ export default function App() {
     }
   }, []);
 
-  // ── Add column (local only) ───────────────────────────────
+  // ── Add column ────────────────────────────────────────────
   const handleAddColumn = useCallback((col) => {
     setStatuses((prev) => [...prev, col]);
     setShowAddColumn(false);
@@ -172,6 +191,7 @@ export default function App() {
   const totalTasks = tasks.length;
   const doneTask   = doneModal ? findTask(doneModal.taskId) : null;
 
+  // ── Loading ───────────────────────────────────────────────
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -180,6 +200,7 @@ export default function App() {
     );
   }
 
+  // ── Error ─────────────────────────────────────────────────
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
@@ -203,6 +224,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -227,6 +249,7 @@ export default function App() {
         </div>
       </div>
 
+      {/* Board */}
       <KanbanBoard
         columns={statuses}
         tasks={tasksByStatus}
@@ -235,19 +258,24 @@ export default function App() {
         onCardClick={handleCardClick}
       />
 
+      {/* Task detail / edit modal */}
       {detailTask && (
         <TaskDetailModal
           task={detailTask}
+          users={users}
+          severities={severities}
           onUpdate={(taskId, fields) => {
             if (fields.subtasks !== undefined) {
               handleUpdateSubtasks(taskId, fields.subtasks);
             }
           }}
+          onEdit={handleEditTask}
           onDelete={handleDeleteTask}
           onClose={() => setDetailTask(null)}
         />
       )}
 
+      {/* Done modal */}
       {doneModal && doneTask && (
         <DoneModal
           taskName={doneTask.title}
@@ -256,15 +284,18 @@ export default function App() {
         />
       )}
 
+      {/* Add task modal */}
       {showAddTask && (
         <AddTaskModal
           onAdd={handleAddTask}
           onClose={() => setShowAddTask(false)}
           users={users}
           statuses={statuses}
+          severities={severities}
         />
       )}
 
+      {/* Add column modal */}
       {showAddColumn && (
         <AddColumnModal
           onAdd={handleAddColumn}

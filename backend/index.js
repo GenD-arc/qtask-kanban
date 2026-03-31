@@ -1,27 +1,22 @@
 const express = require("express");
-const cors = require("cors");
+const cors    = require("cors");
 
 const app = express();
 
 app.use(cors({
-  origin: "http://localhost:5173", // Vite dev server
+  origin: "http://localhost:5173",
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type"],
 }));
 app.use(express.json());
 
 // ── Routes ───────────────────────────────────────────────────
-const registerRouter = require("./routes/register");
-const loginRouter    = require("./routes/login");
-const statusesRouter = require("./routes/statuses");
-const tasksRouter    = require("./routes/tasks");
-const usersRouter    = require("./routes/users");
-
-app.use("/api/register", registerRouter);
-app.use("/api/login",    loginRouter);
-app.use("/api/statuses", statusesRouter);
-app.use("/api/tasks",    tasksRouter);
-app.use("/api/users",    usersRouter);
+app.use("/api/register",   require("./routes/register"));
+app.use("/api/login",      require("./routes/login"));
+app.use("/api/statuses",   require("./routes/statuses"));
+app.use("/api/severities", require("./routes/severities"));
+app.use("/api/tasks",      require("./routes/tasks"));
+app.use("/api/users",      require("./routes/users"));
 
 // ── Health check ─────────────────────────────────────────────
 app.get("/", (req, res) => {
@@ -34,7 +29,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Internal server error" });
 });
 
-// ── Start server ─────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Q-Task API running on http://localhost:${PORT}`);
