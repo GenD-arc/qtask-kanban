@@ -1,10 +1,13 @@
 import TaskCard from "./TaskCard";
 
+// Might delete this color since the db already stores the color for each column
 function colAccent(col) {
   if (col.isFinal) return "border-t-emerald-400";
   const l = col.label.toLowerCase();
-  if (l.includes("active") || l.includes("progress")) return "border-t-amber-400";
-  if (l.includes("review") || l.includes("verification")) return "border-t-purple-400";
+  if (l.includes("active") || l.includes("progress"))
+    return "border-t-amber-400";
+  if (l.includes("review") || l.includes("verification"))
+    return "border-t-purple-400";
   if (l.includes("blocked") || l.includes("failed")) return "border-t-red-400";
   return "border-t-gray-300";
 }
@@ -15,9 +18,11 @@ function colAccent(col) {
  * on screen before the user needs to scroll.
  */
 export default function KanbanColumn({ col, tasks, colRef, onCardClick }) {
+  // console.log(tasks);
   return (
     <div
-      className={`shrink-0 w-60 bg-white rounded-2xl shadow-sm border-t-4 ${colAccent(col)}`}
+      className={`shrink-0 w-60 bg-white rounded-2xl shadow-sm border-t-4`}
+      style={{ borderColor: col.color || "#BFBFBF" }}
     >
       {/* Header */}
       <div className="px-4 pt-3 pb-2 flex items-center justify-between">

@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
 
-import KanbanBoard     from "./components/board/KanbanBoard";
-import DoneModal       from "./components/modals/DoneModal";
-import AddTaskModal    from "./components/modals/AddTaskModal";
-import AddColumnModal  from "./components/modals/AddColumnModal";
+import KanbanBoard from "./components/board/KanbanBoard";
+import DoneModal from "./components/modals/DoneModal";
+import AddTaskModal from "./components/modals/AddTaskModal";
+import AddColumnModal from "./components/modals/AddColumnModal";
 import TaskDetailModal from "./components/modals/TaskDetailModal";
 
 import {
@@ -11,6 +11,7 @@ import {
   fetchSeverities,
   fetchTasks,
   fetchUsers,
+  createStatus,
   moveTask,
   createTask,
   updateTask,
@@ -19,29 +20,30 @@ import {
 } from "./services/api";
 
 export default function App() {
-  const [statuses,      setStatuses]      = useState([]);
-  const [severities,    setSeverities]    = useState([]);
-  const [tasks,         setTasks]         = useState([]);
-  const [users,         setUsers]         = useState([]);
-  const [loading,       setLoading]       = useState(true);
-  const [error,         setError]         = useState(null);
-  const [renderKey,     setRenderKey]     = useState(0);
-  const [doneModal,     setDoneModal]     = useState(null);
-  const [showAddTask,   setShowAddTask]   = useState(false);
+  const [statuses, setStatuses] = useState([]);
+  const [severities, setSeverities] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [renderKey, setRenderKey] = useState(0);
+  const [doneModal, setDoneModal] = useState(null);
+  const [showAddTask, setShowAddTask] = useState(false);
   const [showAddColumn, setShowAddColumn] = useState(false);
-  const [detailTask,    setDetailTask]    = useState(null);
+  const [detailTask, setDetailTask] = useState(null);
 
   // ── Load on mount ─────────────────────────────────────────
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
-        const [statusData, severityData, taskData, userData] = await Promise.all([
-          fetchStatuses(),
-          fetchSeverities(),
-          fetchTasks(),
-          fetchUsers(),
-        ]);
+        const [statusData, severityData, taskData, userData] =
+          await Promise.all([
+            fetchStatuses(),
+            fetchSeverities(),
+            fetchTasks(),
+            fetchUsers(),
+          ]);
         setStatuses(statusData);
         setSeverities(severityData);
         setTasks(taskData);
@@ -63,7 +65,7 @@ export default function App() {
 
   const findTask = useCallback(
     (taskId) => tasks.find((t) => t.id === taskId),
-    [tasks]
+    [tasks],
   );
 
   // ── Drag end ──────────────────────────────────────────────
@@ -79,23 +81,29 @@ export default function App() {
           setTasks((prev) =>
             prev.map((t) =>
               t.id === taskId
-                ? { ...t, statusId: toStatusId, statusLabel: targetStatus?.label }
-                : t
-            )
+                ? {
+                    ...t,
+                    statusId: toStatusId,
+                    statusLabel: targetStatus?.label,
+                  }
+                : t,
+            ),
           );
           setRenderKey((k) => k + 1);
           await moveTask(taskId, toStatusId);
         } catch (err) {
           console.error("Move failed:", err.message);
           setTasks((prev) =>
-            prev.map((t) => (t.id === taskId ? { ...t, statusId: fromStatusId } : t))
+            prev.map((t) =>
+              t.id === taskId ? { ...t, statusId: fromStatusId } : t,
+            ),
           );
           setRenderKey((k) => k + 1);
           alert(`Move failed: ${err.message}`);
         }
       }
     },
-    [statuses]
+    [statuses],
   );
 
   // ── Done modal confirm ────────────────────────────────────
@@ -108,9 +116,15 @@ export default function App() {
         setTasks((prev) =>
           prev.map((t) =>
             t.id === taskId
-              ? { ...t, statusId: targetStatusId, statusLabel: targetStatus?.label, actualEndDate, progress: 100 }
-              : t
-          )
+              ? {
+                  ...t,
+                  statusId: targetStatusId,
+                  statusLabel: targetStatus?.label,
+                  actualEndDate,
+                  progress: 100,
+                }
+              : t,
+          ),
         );
         setRenderKey((k) => k + 1);
         const updated = await moveTask(taskId, targetStatusId, actualEndDate);
@@ -122,7 +136,7 @@ export default function App() {
         setDoneModal(null);
       }
     },
-    [doneModal, statuses]
+    [doneModal, statuses],
   );
 
   // ── Add task ──────────────────────────────────────────────
@@ -138,19 +152,52 @@ export default function App() {
     }
   }, []);
 
+  // ── Add column ────────────────────────────────────────────
+  // THE FIX: calls POST /api/statuses and calculates sortOrder automatically.
+  //
+  // BEFORE: pushed a local fake object { key, title, isFinal } into statuses
+  //         state only — never touched the DB, column vanished on refresh,
+  //         and the fake string key caused drag-and-drop to break.
+  //
+  // AFTER:  calculates sortOrder = max(existing sortOrders) + 1 so the new
+  //         column always appears at the right end. Calls createStatus() which
+  //         hits POST /api/statuses and returns the real DB row with a numeric
+  //         id. That real row is appended to statuses state so the board
+  //         renders the column immediately AND persists across refreshes.
+  const handleAddColumn = useCallback(
+    async ({ label, isFinal, isDefault }) => {
+      // Calculate the next sortOrder so the new column appears at the end
+      const maxOrder = statuses.reduce(
+        (max, s) => Math.max(max, s.sortOrder ?? 0),
+        0,
+      );
+
+      const saved = await createStatus({
+        label,
+        isFinal: isFinal ? 1 : 0,
+        isDefault: isDefault ? 1 : 0,
+        sortOrder: maxOrder + 1,
+      });
+
+      // Append the real DB row (has numeric id, correct sortOrder, etc.)
+      setStatuses((prev) => [...prev, saved]);
+      setShowAddColumn(false);
+      setRenderKey((k) => k + 1);
+
+      // The modal catches any thrown errors and shows them inline
+    },
+    [statuses],
+  );
+
   // ── Edit task fields ──────────────────────────────────────
-  // Called from TaskDetailModal when the user saves assignee/severity/date.
-  // Updates the flat tasks array so the card on the board reflects the change.
-  // Does NOT touch detailTask so the modal's local subtask state is preserved.
   const handleEditTask = useCallback(async (taskId, payload) => {
     try {
       const updated = await updateTask(taskId, payload);
       setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
-      // Also update detailTask so the view-mode reflects the saved values
       setDetailTask((prev) => (prev?.id === taskId ? updated : prev));
     } catch (err) {
       console.error("Edit task failed:", err.message);
-      throw err; // let the modal show its saving state
+      throw err;
     }
   }, []);
 
@@ -182,14 +229,8 @@ export default function App() {
     }
   }, []);
 
-  // ── Add column ────────────────────────────────────────────
-  const handleAddColumn = useCallback((col) => {
-    setStatuses((prev) => [...prev, col]);
-    setShowAddColumn(false);
-  }, []);
-
   const totalTasks = tasks.length;
-  const doneTask   = doneModal ? findTask(doneModal.taskId) : null;
+  const doneTask = doneModal ? findTask(doneModal.taskId) : null;
 
   // ── Loading ───────────────────────────────────────────────
   if (loading) {
@@ -205,7 +246,9 @@ export default function App() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-2xl shadow p-6 max-w-sm text-center space-y-3">
-          <p className="text-red-500 font-semibold">Could not connect to the server</p>
+          <p className="text-red-500 font-semibold">
+            Could not connect to the server
+          </p>
           <p className="text-sm text-gray-500">{error}</p>
           <p className="text-xs text-gray-400">
             Make sure the Express backend is running on{" "}
@@ -224,13 +267,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Kanban Board</h1>
           <p className="text-sm text-gray-400 mt-0.5">
-            {totalTasks} task{totalTasks !== 1 ? "s" : ""} across {statuses.length} columns
+            {totalTasks} task{totalTasks !== 1 ? "s" : ""} across{" "}
+            {statuses.length} columns
           </p>
         </div>
         <div className="flex gap-2">

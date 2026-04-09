@@ -42,7 +42,7 @@ router.get("/", async (req, res) => {
          t.targetDate, t.actualEndDate, t.createdAt, t.updatedAt,
          t.statusId,   s.label  AS statusLabel,   s.isFinal AS statusIsFinal,
          t.phaseId,    p.label  AS phaseLabel,
-         t.severityId, sv.label AS severityLabel,
+         t.severityId, sv.label AS severityLabel, sv.color AS severityColor,
          t.assigneeId, u.name   AS assigneeName,  u.username AS assigneeUsername
        FROM tasks t
        LEFT JOIN statuses   s  ON t.statusId   = s.id

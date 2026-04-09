@@ -12,13 +12,19 @@ import KanbanColumn from "./KanbanColumn";
  * - The scrollbar is always visible (thin, styled) so users know they can scroll.
  * - Columns are slightly narrower (w-60 = 240px) to show more at once.
  */
-export default function KanbanBoard({ columns, tasks, renderKey, onDragEnd, onCardClick }) {
-  const colRefs      = useRef({});
+export default function KanbanBoard({
+  columns,
+  tasks,
+  renderKey,
+  onDragEnd,
+  onCardClick,
+}) {
+  const colRefs = useRef({});
   const sortablesRef = useRef({});
-  const scrollRef    = useRef(null);
+  const scrollRef = useRef(null);
 
   // Fade state: show left/right edge indicators
-  const [showLeftFade,  setShowLeftFade]  = useState(false);
+  const [showLeftFade, setShowLeftFade] = useState(false);
   const [showRightFade, setShowRightFade] = useState(false);
 
   // Update fade visibility on scroll
@@ -40,15 +46,15 @@ export default function KanbanBoard({ columns, tasks, renderKey, onDragEnd, onCa
       if (!el || sortablesRef.current[id]) return;
 
       sortablesRef.current[id] = Sortable.create(el, {
-        group:       "kanban",
-        animation:   150,
-        ghostClass:  "sortable-ghost",
+        group: "kanban",
+        animation: 150,
+        ghostClass: "sortable-ghost",
         chosenClass: "sortable-chosen",
         onEnd(evt) {
           const { from, to, oldIndex } = evt;
           const fromStatusId = Number(from.dataset.col);
-          const toStatusId   = Number(to.dataset.col);
-          const taskId       = Number(evt.item.dataset.id);
+          const toStatusId = Number(to.dataset.col);
+          const taskId = Number(evt.item.dataset.id);
 
           if (fromStatusId === toStatusId) {
             from.insertBefore(evt.item, from.children[oldIndex] || null);
@@ -83,12 +89,13 @@ export default function KanbanBoard({ columns, tasks, renderKey, onDragEnd, onCa
 
       {/* Outer wrapper — relative so fade overlays are positioned correctly */}
       <div className="relative">
-
         {/* Left fade — signals hidden columns to the left */}
         {showLeftFade && (
           <div
             className="absolute left-0 top-0 bottom-6 w-16 z-10 pointer-events-none"
-            style={{ background: "linear-gradient(to right, #f9fafb, transparent)" }}
+            style={{
+              background: "linear-gradient(to right, #f9fafb, transparent)",
+            }}
           />
         )}
 
@@ -96,7 +103,9 @@ export default function KanbanBoard({ columns, tasks, renderKey, onDragEnd, onCa
         {showRightFade && (
           <div
             className="absolute right-0 top-0 bottom-6 w-16 z-10 pointer-events-none"
-            style={{ background: "linear-gradient(to left, #f9fafb, transparent)" }}
+            style={{
+              background: "linear-gradient(to left, #f9fafb, transparent)",
+            }}
           />
         )}
 
@@ -104,7 +113,7 @@ export default function KanbanBoard({ columns, tasks, renderKey, onDragEnd, onCa
         <div
           key={renderKey}
           ref={scrollRef}
-          onScroll={updateFades}
+          // onScroll={updateFades}
           className="kanban-scroll flex gap-3 items-start overflow-x-auto pb-3"
         >
           {columns.map((col) => (

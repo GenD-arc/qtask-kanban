@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { Upload } from "lucide-react";
 
 /**
  * AddTaskModal
@@ -19,6 +20,7 @@ import { useState } from "react";
  *   statuses    — [{ id, label, isDefault, isFinal }]
  *   severities  — [{ id, label }]
  */
+
 export default function AddTaskModal({
   onAdd,
   onClose,
@@ -71,6 +73,20 @@ export default function AddTaskModal({
   };
 
   const canSubmit = form.title.trim().length > 0 && !adding;
+
+  const fileInputRef = useRef(null);
+  const [fileName, setFileName] = useState("");
+
+  const handleClick = () => {
+    fileInputRef.current.click();
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFileName(file.name);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -178,6 +194,32 @@ export default function AddTaskModal({
               onChange={(e) => set("targetDate", e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
             />
+          </div>
+
+          {/* ── Upload File ── */}
+          <div className="flex flex-col items-center gap-3">
+            <label className="w-full text-xs font-medium uppercase text-gray-500">
+              Upload File
+            </label>
+            {/* Hidden Input */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            {/* Custom Upload Button */}
+            <div
+              onClick={handleClick}
+              className="flex flex-col items-center justify-center gap-2 p-2 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition w-full"
+            >
+              <Upload size={24} className="text-gray-500" />
+              <p className="text-sm text-gray-400">Click to upload a file</p>
+            </div>
+            {/* File Name Display */}
+            {fileName && (
+              <p className="text-sm text-green-600">Selected: {fileName}</p>
+            )}
           </div>
 
           {/* ── Actions ── */}

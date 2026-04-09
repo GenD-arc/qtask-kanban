@@ -2,27 +2,33 @@ import { useState } from "react";
 
 /**
  * AddColumnModal
- * Form for creating a new Kanban column.
- * The isFinal checkbox tells the board whether dropping a card
- * here should trigger the Done confirmation modal (SRS §3.3).
+ *
+ * FIXED: Now calls POST /api/statuses via the onAdd callback instead of
+ * passing a local object. The parent (App) is responsible for the API call
+ * and passes back the real DB row so the board gets a proper numeric id.
  *
  * Props:
- *   onAdd   — fn(col) called with the new column object on submit
- *   onClose — fn() called when the modal should be dismissed
+ *   onAdd   — async fn({ label, isFinal, sortOrder }) → resolves with saved status row
+ *   onClose — fn()
  */
 export default function AddColumnModal({ onAdd, onClose }) {
   const [title,   setTitle]   = useState("");
   const [isFinal, setIsFinal] = useState(false);
+  const [saving,  setSaving]  = useState(false);
+  const [error,   setError]   = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
-
-    // Generate a stable unique key from the title + timestamp
-    const key =
-      title.trim().toLowerCase().replace(/\s+/g, "_") + "_" + Date.now();
-
-    onAdd({ key, title: title.trim(), isFinal, isDefault: false });
+    if (!title.trim() || saving) return;
+    setError("");
+    setSaving(true);
+    try {
+      await onAdd({ label: title.trim(), isFinal, isDefault: false });
+      // onAdd closes the modal on success
+    } catch (err) {
+      setError(err.message ?? "Failed to add column. Please try again.");
+      setSaving(false);
+    }
   };
 
   return (
@@ -31,6 +37,7 @@ export default function AddColumnModal({ onAdd, onClose }) {
         <h2 className="text-lg font-semibold text-gray-800">Add column</h2>
 
         <form onSubmit={handleSubmit} className="space-y-3">
+
           {/* Column name */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -47,7 +54,7 @@ export default function AddColumnModal({ onAdd, onClose }) {
           </div>
 
           {/* isFinal toggle */}
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={isFinal}
@@ -57,22 +64,32 @@ export default function AddColumnModal({ onAdd, onClose }) {
             This is a completion column (triggers Done modal)
           </label>
 
+          {/* Error message */}
+          {error && (
+            <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
+
           {/* Actions */}
           <div className="flex gap-2 justify-end pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+              disabled={saving}
+              className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-semibold bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition"
+              disabled={!title.trim() || saving}
+              className="px-4 py-2 text-sm font-semibold bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add column
+              {saving ? "Adding…" : "Add column"}
             </button>
           </div>
+
         </form>
       </div>
     </div>

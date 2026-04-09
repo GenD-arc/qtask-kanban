@@ -10,12 +10,12 @@ import {
  * DB field names: title, severityLabel, assigneeName, targetDate, progress, subtasks
  */
 export default function TaskCard({ task, onCardClick }) {
-  const severityKey =
-    task.severityLabel?.split(" - ")[0] ?? task.severityLabel ?? "";
-  const sc =
-    SEVERITY_COLORS[severityKey] ??
-    SEVERITY_COLORS[task.severityLabel] ??
-    SEVERITY_COLORS.Low;
+  // const severityKey =
+  //   task.severityLabel?.split(" - ")[0] ?? task.severityLabel ?? "";
+  // const sc =
+  //   SEVERITY_COLORS[severityKey] ??
+  //   SEVERITY_COLORS[task.severityLabel] ??
+  //   SEVERITY_COLORS.Low;
 
   const shortDate = formatShortDate(task.targetDate);
   const subtasks = task.subtasks ?? [];
@@ -32,6 +32,8 @@ export default function TaskCard({ task, onCardClick }) {
     if (Date.now() - mouseDownTime < 200) onCardClick(task);
   };
 
+  // console.log(task);
+
   return (
     <div
       data-id={task.id}
@@ -44,7 +46,11 @@ export default function TaskCard({ task, onCardClick }) {
         {task.severityLabel ? (
           <span
             className="text-xs font-semibold px-2 py-0.5 rounded-full"
-            style={{ color: sc.text, background: sc.bg }}
+            // style={{ color: sc.text, background: sc.bg }}
+            style={{
+              color: task.severityColor,
+              background: task.severityColor + 20, // add alpha for bg
+            }}
           >
             {task.severityLabel}
           </span>
