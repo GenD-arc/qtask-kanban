@@ -12,15 +12,15 @@ const ALLOWED_EXTENSIONS = new Set([
   ".jpeg",
   ".png",
   ".gif",
-  ".webp", // images
-  ".pdf", // documents
+  ".webp", 
+  ".pdf", 
   ".xlsx",
   ".xls",
-  ".csv", // spreadsheets
+  ".csv", 
   ".doc",
-  ".docx", // word docs
-  ".txt", // plain text
-  ".zip", // archives — block .exe etc.
+  ".docx", 
+  ".txt", 
+  ".zip", 
 ]);
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB  (SRS §6.1)
 

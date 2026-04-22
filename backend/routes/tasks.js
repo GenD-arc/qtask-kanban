@@ -1,15 +1,13 @@
+// backend/routes/tasks.js
 const express = require("express");
 const router  = express.Router();
 const pool    = require("../config/db");
 
-// ─── Helper: build a full task object with joined data ───────────────────────
-// The Kanban column is now driven by phaseId.
-// statusId is still stored on the task as a secondary attribute (the task's
-// QA/workflow status), but it no longer determines which column the card lives in.
+// ─── Helper: build a full task object with joined data ───────
 async function getTaskById(id) {
   const [rows] = await pool.query(
     `SELECT
-       t.id, t.title, t.description, t.progress,
+       t.id, t.projectId, t.title, t.description, t.progress,
        t.targetDate, t.actualEndDate, t.createdAt, t.updatedAt,
        t.phaseId,    p.label  AS phaseLabel,
        p.isFinal    AS phaseIsFinal,
@@ -36,12 +34,25 @@ async function getTaskById(id) {
   return task;
 }
 
-// ─── GET /api/tasks ──────────────────────────────────────────────────────────
+// ─── GET /api/tasks ──────────────────────────────────────────
+// Supports ?projectId=1 to scope tasks to a project.
 router.get("/", async (req, res) => {
+  const { projectId } = req.query;
+
+  const conditions = [];
+  const params     = [];
+
+  if (projectId) {
+    conditions.push("t.projectId = ?");
+    params.push(Number(projectId));
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
   try {
     const [rows] = await pool.query(
       `SELECT
-         t.id, t.title, t.description, t.progress,
+         t.id, t.projectId, t.title, t.description, t.progress,
          t.targetDate, t.actualEndDate, t.createdAt, t.updatedAt,
          t.phaseId,    p.label  AS phaseLabel,
          p.isFinal    AS phaseIsFinal,
@@ -54,7 +65,9 @@ router.get("/", async (req, res) => {
        LEFT JOIN statuses   s  ON t.statusId   = s.id
        LEFT JOIN severities sv ON t.severityId = sv.id
        LEFT JOIN users      u  ON t.assigneeId = u.id
-       ORDER BY t.createdAt DESC`
+       ${where}
+       ORDER BY t.createdAt DESC`,
+      params
     );
 
     for (const task of rows) {
@@ -72,13 +85,19 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ─── POST /api/tasks ─────────────────────────────────────────────────────────
-// Creates a new task. phaseId defaults to the phase where isDefault = 1.
+// ─── POST /api/tasks ─────────────────────────────────────────
 router.post("/", async (req, res) => {
-  const { title, description, phaseId, statusId, severityId, assigneeId, targetDate } = req.body;
+  const {
+    title, description, projectId,
+    phaseId, statusId, severityId,
+    assigneeId, targetDate,
+  } = req.body;
+  const userId = req.headers["x-user-id"] ? Number(req.headers["x-user-id"]) : null;
 
   if (!title?.trim())
     return res.status(400).json({ message: "Title is required" });
+  if (!projectId)
+    return res.status(400).json({ message: "projectId is required" });
 
   try {
     // Resolve default phase if not provided
@@ -88,15 +107,16 @@ router.post("/", async (req, res) => {
         "SELECT id FROM phases WHERE isDefault = 1 LIMIT 1"
       );
       if (defaults.length === 0)
-        return res.status(500).json({ message: "No default phase configured. Run schema_phases_update.sql first." });
+        return res.status(500).json({ message: "No default phase configured." });
       resolvedPhaseId = defaults[0].id;
     }
 
     const [result] = await pool.query(
       `INSERT INTO tasks
-         (title, description, phaseId, statusId, severityId, assigneeId, targetDate, progress)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
+         (projectId, title, description, phaseId, statusId, severityId, assigneeId, targetDate, progress)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`,
       [
+        projectId,
         title.trim(),
         description ?? null,
         resolvedPhaseId,
@@ -108,8 +128,8 @@ router.post("/", async (req, res) => {
     );
 
     await pool.query(
-      "INSERT INTO activity_logs (taskId, action) VALUES (?, ?)",
-      [result.insertId, "Task created"]
+      "INSERT INTO activity_logs (taskId, userId, action) VALUES (?, ?, ?)",
+      [result.insertId, userId, "Task created"]
     );
 
     const task = await getTaskById(result.insertId);
@@ -120,13 +140,11 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ─── PATCH /api/tasks/:id/phase ──────────────────────────────────────────────
-// Moves a task to a new phase column (Kanban drag-and-drop).
-// Replaces the old /status endpoint as the primary drag handler.
-// If the target phase has isFinal = 1, actualEndDate is required.
+// ─── PATCH /api/tasks/:id/phase ──────────────────────────────
 router.patch("/:id/phase", async (req, res) => {
-  const { id }                   = req.params;
+  const { id }                     = req.params;
   const { phaseId, actualEndDate } = req.body;
+  const userId = req.headers["x-user-id"] ? Number(req.headers["x-user-id"]) : null;
 
   if (!phaseId)
     return res.status(400).json({ message: "phaseId is required" });
@@ -165,8 +183,8 @@ router.patch("/:id/phase", async (req, res) => {
       (isFinal && resolvedEnd ? ` — Actual End Date: ${resolvedEnd}` : "");
 
     await pool.query(
-      "INSERT INTO activity_logs (taskId, action) VALUES (?, ?)",
-      [id, logAction]
+      "INSERT INTO activity_logs (taskId, userId, action) VALUES (?, ?, ?)",
+      [id, userId, logAction]
     );
 
     const task = await getTaskById(id);
@@ -177,7 +195,7 @@ router.patch("/:id/phase", async (req, res) => {
   }
 });
 
-// ─── PATCH /api/tasks/:id/subtasks ───────────────────────────────────────────
+// ─── PATCH /api/tasks/:id/subtasks ───────────────────────────
 router.patch("/:id/subtasks", async (req, res) => {
   const { id }       = req.params;
   const { subtasks } = req.body;
@@ -209,23 +227,25 @@ router.patch("/:id/subtasks", async (req, res) => {
   }
 });
 
-// ─── PUT /api/tasks/:id ───────────────────────────────────────────────────────
-// Full update of task detail fields.
+// ─── PUT /api/tasks/:id ──────────────────────────────────────
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
   const { title, description, statusId, severityId, assigneeId, targetDate } = req.body;
+  const userId = req.headers["x-user-id"] ? Number(req.headers["x-user-id"]) : null;
 
   try {
     await pool.query(
       `UPDATE tasks
-       SET title = ?, description = ?, statusId = ?, severityId = ?, assigneeId = ?, targetDate = ?
+       SET title = ?, description = ?, statusId = ?,
+           severityId = ?, assigneeId = ?, targetDate = ?
        WHERE id = ?`,
-      [title, description ?? null, statusId ?? null, severityId ?? null, assigneeId ?? null, targetDate ?? null, id]
+      [title, description ?? null, statusId ?? null,
+       severityId ?? null, assigneeId ?? null, targetDate ?? null, id]
     );
 
     await pool.query(
-      "INSERT INTO activity_logs (taskId, action) VALUES (?, ?)",
-      [id, "Task details updated"]
+      "INSERT INTO activity_logs (taskId, userId, action) VALUES (?, ?, ?)",
+      [id, userId, "Task details updated"]
     );
 
     const task = await getTaskById(id);
@@ -236,7 +256,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// ─── DELETE /api/tasks/:id ────────────────────────────────────────────────────
+// ─── DELETE /api/tasks/:id ────────────────────────────────────
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
   try {

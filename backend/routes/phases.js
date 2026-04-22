@@ -7,8 +7,13 @@ const pool    = require("../config/db");
 // These are the Kanban board columns.
 router.get("/", async (req, res) => {
   try {
+    const { grouping } = req.query;
+
     const [rows] = await pool.query(
-      "SELECT * FROM phases ORDER BY sortOrder ASC"
+      grouping
+        ? "SELECT * FROM phases WHERE grouping = ? ORDER BY sortOrder ASC"
+        : "SELECT * FROM phases ORDER BY sortOrder ASC",
+      grouping ? [grouping] : []
     );
     res.json(rows);
   } catch (err) {
@@ -20,14 +25,14 @@ router.get("/", async (req, res) => {
 // POST /api/phases
 // Creates a new phase (Admin only in full system).
 router.post("/", async (req, res) => {
-  const { label, sortOrder = 0, isDefault = 0, isFinal = 0 } = req.body;
+  const { label, sortOrder = 0, isDefault = 0, isFinal = 0, grouping = "dev" } = req.body;
   if (!label?.trim())
     return res.status(400).json({ message: "Label is required" });
 
   try {
     const [result] = await pool.query(
-      "INSERT INTO phases (label, sortOrder, isDefault, isFinal) VALUES (?, ?, ?, ?)",
-      [label.trim(), sortOrder, isDefault ? 1 : 0, isFinal ? 1 : 0]
+      "INSERT INTO phases (label, sortOrder, isDefault, isFinal, grouping) VALUES (?, ?, ?, ?, ?)",
+      [label.trim(), sortOrder, isDefault ? 1 : 0, isFinal ? 1 : 0, grouping]
     );
     const [rows] = await pool.query("SELECT * FROM phases WHERE id = ?", [result.insertId]);
     res.status(201).json(rows[0]);
@@ -43,11 +48,11 @@ router.post("/", async (req, res) => {
 // Rename or reorder a phase.
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
-  const { label, sortOrder, isDefault, isFinal } = req.body;
+  const { label, sortOrder, isDefault, isFinal, grouping } = req.body;
   try {
     await pool.query(
-      "UPDATE phases SET label = ?, sortOrder = ?, isDefault = ?, isFinal = ? WHERE id = ?",
-      [label, sortOrder, isDefault ? 1 : 0, isFinal ? 1 : 0, id]
+      "UPDATE phases SET label = ?, sortOrder = ?, isDefault = ?, isFinal = ?, grouping = ? WHERE id = ?",
+      [label, sortOrder, isDefault ? 1 : 0, isFinal ? 1 : 0, grouping, id]
     );
     const [rows] = await pool.query("SELECT * FROM phases WHERE id = ?", [id]);
     res.json(rows[0]);

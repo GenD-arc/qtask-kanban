@@ -1,9 +1,16 @@
 const BASE_URL = "http://localhost:5000/api";
 
 async function request(method, path, body) {
+  const stored = localStorage.getItem("qtask_user");
+  const user   = stored ? JSON.parse(stored) : null;
+
   const options = {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+    "Content-Type": "application/json",
+    ...(user?.id   ? { "x-user-id":   String(user.id)   } : {}),
+    ...(user?.role ? { "x-user-role": user.role          } : {}),
+  },
   };
   if (body !== undefined) options.body = JSON.stringify(body);
 
@@ -14,10 +21,15 @@ async function request(method, path, body) {
   return data;
 }
 
+// ── Auth ──────────────────────────────────────────────────────
+export const loginUser = (username, password) =>
+  request("POST", "/login", { username, password });
+
 // ── Phases (Kanban columns) ───────────────────────────────────
 // Phases drive the board columns. Each task's phaseId determines
 // which column it lives in.
-export const fetchPhases  = ()        => request("GET",    "/phases");
+export const fetchPhases  = (grouping) =>
+  request("GET", grouping ? `/phases?grouping=${grouping}` : "/phases");
 export const createPhase  = (payload) => request("POST",   "/phases", payload);
 export const updatePhase  = (id, payload) => request("PUT", `/phases/${id}`, payload);
 export const deletePhase  = (id)      => request("DELETE", `/phases/${id}`);
@@ -33,10 +45,26 @@ export const fetchSeverities = () => request("GET", "/severities");
 // ── Users ─────────────────────────────────────────────────────
 export const fetchUsers = () => request("GET", "/users");
 
+// ── Projects ──────────────────────────────────────────────────
+export const fetchProjects  = ()              => request("GET",    "/projects");
+export const createProject  = (payload)       => request("POST",   "/projects", payload);
+export const updateProject  = (id, payload)   => request("PUT",    `/projects/${id}`, payload);
+export const deleteProject  = (id)            => request("DELETE", `/projects/${id}`);
+
+// ── Tasks — updated fetchTasks to accept projectId ─────────────
+export const fetchTasks = (projectId) =>
+  request("GET", projectId ? `/tasks?projectId=${projectId}` : "/tasks");
+
 // ── Tasks ─────────────────────────────────────────────────────
-export const fetchTasks = () => request("GET", "/tasks");
+//export const fetchTasks = () => request("GET", "/tasks");
 
 export const createTask = (payload) => request("POST", "/tasks", payload);
+
+// ── Activity Logs ─────────────────────────────────────────────
+export const fetchActivityLogs = (filters = {}) => {
+  const params = new URLSearchParams(filters).toString();
+  return request("GET", `/activity-logs${params ? `?${params}` : ""}`);
+};
 
 /**
  * Move a task to a different phase column (Kanban drag-and-drop).
@@ -84,3 +112,11 @@ export const deleteAttachment = (taskId, attachmentId) =>
 
 export const attachmentDownloadUrl = (taskId, attachmentId) =>
   `${BASE_URL}/attachments/${taskId}/${attachmentId}/download`;
+
+// ── User Management (Admin only) ──────────────────────────────
+export const fetchAllUsers      = ()              => request("GET",    "/users?all=true");
+export const createUser         = (payload)       => request("POST",   "/users", payload);
+export const updateUser         = (id, payload)   => request("PUT",    `/users/${id}`, payload);
+export const resetUserPassword  = (id, password)  => request("PATCH",  `/users/${id}/password`, { newPassword: password });
+export const toggleUserStatus   = (id, isActive)  => request("PATCH",  `/users/${id}/status`, { isActive });
+export const deleteUser         = (id)            => request("DELETE", `/users/${id}`);

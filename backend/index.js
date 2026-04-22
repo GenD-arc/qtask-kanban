@@ -8,7 +8,7 @@ app.use(
   cors({
     origin: "http://localhost:5173",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type", "x-user-id", "x-user-role"],
   }),
 );
 app.use(express.json());
@@ -26,6 +26,8 @@ app.use("/api/severities", require("./routes/severities"));
 app.use("/api/tasks", require("./routes/tasks"));
 app.use("/api/users", require("./routes/users"));
 app.use("/api/attachments", require("./routes/attachments"));
+app.use("/api/activity-logs", require("./routes/activityLogs"));
+app.use("/api/projects", require("./routes/projects"));
 
 // ── Health check ─────────────────────────────────────────────
 app.get("/", (req, res) => {

@@ -14,7 +14,7 @@ loginRouter.post("/", async (req, res) => {
 
   try {
     const [results] = await pool.query(
-      `SELECT * FROM accounts WHERE username = ?`,
+      `SELECT * FROM users WHERE username = ?`,
       [username],
     );
 
