@@ -115,17 +115,25 @@ function Board({ currentUser, logout }) {
 
   // ── Load tasks whenever activeProjectId changes ────────────
   useEffect(() => {
-    async function loadTasks() {
-      try {
-        // Non-PM roles fetch all tasks (no project scoping yet)
-        const data = await fetchTasks(isPM ? activeProjectId : null);
-        setTasks(data);
-      } catch (err) {
-        console.error("Failed to load tasks:", err.message);
-      }
+  async function loadTasks() {
+    try {
+      const isQA  = currentUser.role === "QA";
+      const isDev = currentUser.role === "Developer";
+
+      const data = await fetchTasks(
+        isPM  ? activeProjectId  : null,
+        // QA sees only tasks assigned to them as QA assignee
+        // Dev sees only tasks assigned to them as dev assignee
+        (isQA || isDev) ? currentUser.id : null,
+        isQA  ? "qa"  : isDev ? "dev" : null
+      );
+      setTasks(data);
+    } catch (err) {
+      console.error("Failed to load tasks:", err.message);
     }
-    loadTasks();
-  }, [activeProjectId, isPM]);
+  }
+  loadTasks();
+}, [activeProjectId, isPM, currentUser]);
 
   // ── Project switch ─────────────────────────────────────────
   const handleProjectChange = useCallback((projectId) => {
@@ -156,7 +164,7 @@ function Board({ currentUser, logout }) {
           setTasks((prev) =>
             prev.map((t) =>
               t.id === taskId
-                ? { ...t, phaseId: toPhaseId, phaseLabel: targetPhase?.label }
+                ? { ...t, phaseId: toPhaseId, phaseLabel: targetPhase?.label, phaseGrouping: targetPhase?.grouping, }
                 : t
             )
           );

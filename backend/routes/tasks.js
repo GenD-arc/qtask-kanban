@@ -9,17 +9,20 @@ async function getTaskById(id) {
     `SELECT
        t.id, t.projectId, t.title, t.description, t.progress,
        t.targetDate, t.actualEndDate, t.createdAt, t.updatedAt,
-       t.phaseId,    p.label  AS phaseLabel,
-       p.isFinal    AS phaseIsFinal,
-       p.isDefault  AS phaseIsDefault,
-       t.statusId,  s.label  AS statusLabel,
-       t.severityId, sv.label AS severityLabel,
-       t.assigneeId, u.name   AS assigneeName, u.username AS assigneeUsername
+       t.phaseId,      p.label   AS phaseLabel,
+       p.isFinal       AS phaseIsFinal,
+       p.isDefault     AS phaseIsDefault,
+       p.grouping      AS phaseGrouping,
+       t.statusId,     s.label   AS statusLabel,
+       t.severityId,   sv.label  AS severityLabel,
+       t.assigneeId,   u.name    AS assigneeName,   u.username AS assigneeUsername,
+       t.qaAssigneeId, qa.name   AS qaAssigneeName, qa.username AS qaAssigneeUsername
      FROM tasks t
-     LEFT JOIN phases     p  ON t.phaseId    = p.id
-     LEFT JOIN statuses   s  ON t.statusId   = s.id
-     LEFT JOIN severities sv ON t.severityId = sv.id
-     LEFT JOIN users      u  ON t.assigneeId = u.id
+     LEFT JOIN phases     p  ON t.phaseId      = p.id
+     LEFT JOIN statuses   s  ON t.statusId     = s.id
+     LEFT JOIN severities sv ON t.severityId   = sv.id
+     LEFT JOIN users      u  ON t.assigneeId   = u.id
+     LEFT JOIN users      qa ON t.qaAssigneeId = qa.id
      WHERE t.id = ?`,
     [id]
   );
@@ -35,9 +38,8 @@ async function getTaskById(id) {
 }
 
 // ─── GET /api/tasks ──────────────────────────────────────────
-// Supports ?projectId=1 to scope tasks to a project.
 router.get("/", async (req, res) => {
-  const { projectId } = req.query;
+  const { projectId, assignedUserId, grouping  } = req.query;
 
   const conditions = [];
   const params     = [];
@@ -47,6 +49,15 @@ router.get("/", async (req, res) => {
     params.push(Number(projectId));
   }
 
+  // Filter by dev or qa assignee based on grouping
+  if (assignedUserId && grouping === "qa") {
+    conditions.push("t.qaAssigneeId = ?");
+    params.push(Number(assignedUserId));
+  } else if (assignedUserId && grouping === "dev") {
+    conditions.push("t.assigneeId = ?");
+    params.push(Number(assignedUserId));
+  }
+
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
   try {
@@ -54,17 +65,20 @@ router.get("/", async (req, res) => {
       `SELECT
          t.id, t.projectId, t.title, t.description, t.progress,
          t.targetDate, t.actualEndDate, t.createdAt, t.updatedAt,
-         t.phaseId,    p.label  AS phaseLabel,
-         p.isFinal    AS phaseIsFinal,
-         p.isDefault  AS phaseIsDefault,
-         t.statusId,  s.label  AS statusLabel,
-         t.severityId, sv.label AS severityLabel,
-         t.assigneeId, u.name   AS assigneeName, u.username AS assigneeUsername
+         t.phaseId,      p.label   AS phaseLabel,
+         p.isFinal       AS phaseIsFinal,
+         p.isDefault     AS phaseIsDefault,
+         p.grouping      AS phaseGrouping,
+         t.statusId,     s.label   AS statusLabel,
+         t.severityId,   sv.label  AS severityLabel,
+         t.assigneeId,   u.name    AS assigneeName,   u.username AS assigneeUsername,
+         t.qaAssigneeId, qa.name   AS qaAssigneeName, qa.username AS qaAssigneeUsername
        FROM tasks t
-       LEFT JOIN phases     p  ON t.phaseId    = p.id
-       LEFT JOIN statuses   s  ON t.statusId   = s.id
-       LEFT JOIN severities sv ON t.severityId = sv.id
-       LEFT JOIN users      u  ON t.assigneeId = u.id
+       LEFT JOIN phases     p  ON t.phaseId      = p.id
+       LEFT JOIN statuses   s  ON t.statusId     = s.id
+       LEFT JOIN severities sv ON t.severityId   = sv.id
+       LEFT JOIN users      u  ON t.assigneeId   = u.id
+       LEFT JOIN users      qa ON t.qaAssigneeId = qa.id
        ${where}
        ORDER BY t.createdAt DESC`,
       params
@@ -90,7 +104,7 @@ router.post("/", async (req, res) => {
   const {
     title, description, projectId,
     phaseId, statusId, severityId,
-    assigneeId, targetDate,
+    assigneeId, qaAssigneeId, targetDate,
   } = req.body;
   const userId = req.headers["x-user-id"] ? Number(req.headers["x-user-id"]) : null;
 
@@ -100,7 +114,6 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ message: "projectId is required" });
 
   try {
-    // Resolve default phase if not provided
     let resolvedPhaseId = phaseId;
     if (!resolvedPhaseId) {
       const [defaults] = await pool.query(
@@ -113,17 +126,19 @@ router.post("/", async (req, res) => {
 
     const [result] = await pool.query(
       `INSERT INTO tasks
-         (projectId, title, description, phaseId, statusId, severityId, assigneeId, targetDate, progress)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+         (projectId, title, description, phaseId, statusId, severityId,
+          assigneeId, qaAssigneeId, targetDate, progress)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
       [
         projectId,
         title.trim(),
-        description ?? null,
+        description    ?? null,
         resolvedPhaseId,
-        statusId   ?? null,
-        severityId ?? null,
-        assigneeId ?? null,
-        targetDate ?? null,
+        statusId       ?? null,
+        severityId     ?? null,
+        assigneeId     ?? null,
+        qaAssigneeId   ?? null,
+        targetDate     ?? null,
       ]
     );
 
@@ -151,14 +166,17 @@ router.patch("/:id/phase", async (req, res) => {
 
   try {
     const [current] = await pool.query(
-      "SELECT t.phaseId, p.label AS oldLabel FROM tasks t LEFT JOIN phases p ON t.phaseId = p.id WHERE t.id = ?",
+      `SELECT t.phaseId, p.label AS oldLabel
+       FROM tasks t
+       LEFT JOIN phases p ON t.phaseId = p.id
+       WHERE t.id = ?`,
       [id]
     );
     if (current.length === 0)
       return res.status(404).json({ message: "Task not found" });
 
     const [newPhase] = await pool.query(
-      "SELECT label, isFinal FROM phases WHERE id = ?",
+      "SELECT label, isFinal, grouping FROM phases WHERE id = ?",
       [phaseId]
     );
     if (newPhase.length === 0)
@@ -178,6 +196,7 @@ router.patch("/:id/phase", async (req, res) => {
       [phaseId, isFinal ? 1 : 0, resolvedEnd, isFinal ? 1 : 0, id]
     );
 
+    // ── Log the phase change ──────────────────────────────
     const logAction =
       `Phase changed from "${current[0].oldLabel}" to "${newPhase[0].label}"` +
       (isFinal && resolvedEnd ? ` — Actual End Date: ${resolvedEnd}` : "");
@@ -217,7 +236,10 @@ router.patch("/:id/subtasks", async (req, res) => {
     const done     = subtasks.filter((s) => s.isDone).length;
     const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
-    await pool.query("UPDATE tasks SET progress = ? WHERE id = ?", [progress, id]);
+    await pool.query(
+      "UPDATE tasks SET progress = ? WHERE id = ?",
+      [progress, id]
+    );
 
     const task = await getTaskById(id);
     res.json(task);
@@ -230,22 +252,104 @@ router.patch("/:id/subtasks", async (req, res) => {
 // ─── PUT /api/tasks/:id ──────────────────────────────────────
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
-  const { title, description, statusId, severityId, assigneeId, targetDate } = req.body;
+  const {
+    title, description, statusId,
+    severityId, assigneeId, qaAssigneeId, targetDate,
+  } = req.body;
   const userId = req.headers["x-user-id"] ? Number(req.headers["x-user-id"]) : null;
 
   try {
+    // ── Fetch current task state for comparison ───────────
+    const [current] = await pool.query(
+      `SELECT
+         t.assigneeId,   u.name  AS assigneeName,
+         t.qaAssigneeId, qa.name AS qaAssigneeName,
+         t.statusId,     s.label AS statusLabel,
+         t.severityId,   sv.label AS severityLabel
+       FROM tasks t
+       LEFT JOIN users      u  ON t.assigneeId   = u.id
+       LEFT JOIN users      qa ON t.qaAssigneeId = qa.id
+       LEFT JOIN statuses   s  ON t.statusId     = s.id
+       LEFT JOIN severities sv ON t.severityId   = sv.id
+       WHERE t.id = ?`,
+      [id]
+    );
+
+    if (current.length === 0)
+      return res.status(404).json({ message: "Task not found" });
+
+    const prev = current[0];
+
     await pool.query(
       `UPDATE tasks
-       SET title = ?, description = ?, statusId = ?,
-           severityId = ?, assigneeId = ?, targetDate = ?
+       SET title        = ?, description  = ?, statusId     = ?,
+           severityId   = ?, assigneeId   = ?, qaAssigneeId = ?,
+           targetDate   = ?
        WHERE id = ?`,
-      [title, description ?? null, statusId ?? null,
-       severityId ?? null, assigneeId ?? null, targetDate ?? null, id]
+      [
+        title,
+        description  ?? null,
+        statusId     ?? null,
+        severityId   ?? null,
+        assigneeId   ?? null,
+        qaAssigneeId ?? null,
+        targetDate   ?? null,
+        id,
+      ]
     );
+
+    // ── Build specific log messages ────────────────────────
+    const changes = [];
+
+    if (Number(assigneeId) !== prev.assigneeId) {
+      // Fetch new assignee name if assigned
+      let newName = "Unassigned";
+      if (assigneeId) {
+        const [u] = await pool.query("SELECT name FROM users WHERE id = ?", [assigneeId]);
+        if (u.length > 0) newName = u[0].name;
+      }
+      const oldName = prev.assigneeName ?? "Unassigned";
+      changes.push(`Dev assignee changed from "${oldName}" to "${newName}"`);
+    }
+
+    if (Number(qaAssigneeId) !== prev.qaAssigneeId) {
+      let newName = "Unassigned";
+      if (qaAssigneeId) {
+        const [u] = await pool.query("SELECT name FROM users WHERE id = ?", [qaAssigneeId]);
+        if (u.length > 0) newName = u[0].name;
+      }
+      const oldName = prev.qaAssigneeName ?? "Unassigned";
+      changes.push(`QA assignee changed from "${oldName}" to "${newName}"`);
+    }
+
+    if (Number(statusId) !== prev.statusId) {
+      let newLabel = "None";
+      if (statusId) {
+        const [s] = await pool.query("SELECT label FROM statuses WHERE id = ?", [statusId]);
+        if (s.length > 0) newLabel = s[0].label;
+      }
+      const oldLabel = prev.statusLabel ?? "None";
+      changes.push(`Status changed from "${oldLabel}" to "${newLabel}"`);
+    }
+
+    if (Number(severityId) !== prev.severityId) {
+      let newLabel = "None";
+      if (severityId) {
+        const [sv] = await pool.query("SELECT label FROM severities WHERE id = ?", [severityId]);
+        if (sv.length > 0) newLabel = sv[0].label;
+      }
+      const oldLabel = prev.severityLabel ?? "None";
+      changes.push(`Severity changed from "${oldLabel}" to "${newLabel}"`);
+    }
+
+    // Fall back to generic message if nothing specific changed
+    const logAction = changes.length > 0
+      ? changes.join(" · ")
+      : "Task details updated";
 
     await pool.query(
       "INSERT INTO activity_logs (taskId, userId, action) VALUES (?, ?, ?)",
-      [id, userId, "Task details updated"]
+      [id, userId, logAction]
     );
 
     const task = await getTaskById(id);

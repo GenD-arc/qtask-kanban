@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Apr 22, 2026 at 03:28 PM
+-- Generation Time: Apr 24, 2026 at 05:02 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -102,7 +102,42 @@ INSERT INTO `activity_logs` (`id`, `taskId`, `userId`, `action`, `createdAt`) VA
 (60, 8, 6, 'Phase changed from \"Backlog (Requirements)\" to \"To Do (Ready for Dev)\"', '2026-04-22 20:34:46'),
 (61, 7, 6, 'Phase changed from \"Backlog (Requirements)\" to \"To Do (Ready for Dev)\"', '2026-04-22 20:34:48'),
 (62, 8, 6, 'Task details updated', '2026-04-22 20:35:13'),
-(63, 3, 2, 'Phase changed from \"To Do (Ready for Dev)\" to \"In Progress\"', '2026-04-22 20:35:49');
+(63, 3, 2, 'Phase changed from \"To Do (Ready for Dev)\" to \"In Progress\"', '2026-04-22 20:35:49'),
+(64, 4, 7, 'Task details updated', '2026-04-24 10:49:46'),
+(65, 5, 7, 'Task details updated', '2026-04-24 10:49:58'),
+(66, 3, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:50:07'),
+(67, 3, 7, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 10:50:17'),
+(68, 3, 7, 'Phase changed from \"In Progress\" to \"For Review (Dev Done)\"', '2026-04-24 10:50:30'),
+(69, 3, 7, 'Task details updated', '2026-04-24 10:50:48'),
+(70, 3, 7, 'Phase changed from \"For Review (Dev Done)\" to \"QA Execution\"', '2026-04-24 10:50:52'),
+(71, 2, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:50:59'),
+(72, 2, 7, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 10:51:05'),
+(73, 3, 7, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 10:51:13'),
+(74, 1, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:51:17'),
+(75, 1, 7, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 10:51:21'),
+(76, 2, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:53:15'),
+(77, 2, 7, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 10:53:16'),
+(78, 2, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:53:17'),
+(79, 2, 7, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 10:53:19'),
+(80, 2, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:55:03'),
+(81, 3, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:55:05'),
+(82, 3, 7, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 10:55:08'),
+(83, 3, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:55:11'),
+(84, 2, 7, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 10:55:14'),
+(85, 3, 7, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 10:55:22'),
+(86, 3, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:55:33'),
+(87, 3, 7, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 10:55:36'),
+(88, 3, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:58:01'),
+(89, 3, 7, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 10:58:02'),
+(90, 2, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:58:05'),
+(91, 2, 7, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 10:58:08'),
+(92, 4, 7, 'Phase changed from \"Deployed (Go-Live)\" to \"In Progress\"', '2026-04-24 10:58:13'),
+(93, 4, 7, 'Phase changed from \"In Progress\" to \"Deployed (Go-Live)\"', '2026-04-24 10:58:15'),
+(94, 3, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:59:21'),
+(95, 2, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:59:28'),
+(96, 2, 7, 'Task details updated', '2026-04-24 10:59:38'),
+(97, 7, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"QA Execution\"', '2026-04-24 11:02:08'),
+(98, 7, 1, 'Phase changed from \"QA Execution\" to \"To Do (Ready for Dev)\"', '2026-04-24 11:02:11');
 
 -- --------------------------------------------------------
 
@@ -268,6 +303,7 @@ CREATE TABLE `tasks` (
   `phaseId` int(11) DEFAULT NULL,
   `severityId` int(11) DEFAULT NULL,
   `assigneeId` int(11) DEFAULT NULL,
+  `qaAssigneeId` int(11) DEFAULT NULL,
   `targetDate` date DEFAULT NULL,
   `actualEndDate` date DEFAULT NULL,
   `progress` int(11) NOT NULL DEFAULT 0,
@@ -279,15 +315,15 @@ CREATE TABLE `tasks` (
 -- Dumping data for table `tasks`
 --
 
-INSERT INTO `tasks` (`id`, `projectId`, `title`, `description`, `statusId`, `phaseId`, `severityId`, `assigneeId`, `targetDate`, `actualEndDate`, `progress`, `createdAt`, `updatedAt`) VALUES
-(1, 1, 'Design login page', 'Create Figma mockup and implement HTML/CSS.', 1, 3, 2, 3, '2025-04-10', NULL, 0, '2026-04-18 14:45:08', '2026-04-19 11:53:14'),
-(2, 1, 'Write API docs', 'Document all Express routes via Postman.', 1, 3, 4, 5, '2025-04-20', NULL, 0, '2026-04-18 14:45:08', '2026-04-19 11:53:14'),
-(3, 1, 'Build dashboard UI', 'Implement analytics dashboard with charts.', 2, 3, 2, 2, '2025-04-15', NULL, 55, '2026-04-18 14:45:08', '2026-04-22 20:35:49'),
-(4, 1, 'Auth endpoints', 'Express JWT auth with bcrypt hashing.', 6, 7, 1, 4, '2025-04-10', '2026-04-18', 100, '2026-04-18 14:45:08', '2026-04-19 12:47:47'),
-(5, 1, 'Project repo setup', 'Initialise GitHub repo and branch rules.', 8, 7, 3, 2, '2025-04-01', NULL, 100, '2026-04-18 14:45:08', '2026-04-19 12:47:49'),
-(6, 1, 'Kanban Frontend', 'test data no. 1', 1, 3, 2, 3, '2026-04-22', NULL, 0, '2026-04-19 11:29:17', '2026-04-19 12:47:01'),
-(7, 2, 'Backshot ugh', 'mwehehe', 1, 2, 2, 6, '2026-04-29', NULL, 0, '2026-04-22 20:32:28', '2026-04-22 20:34:48'),
-(8, 2, 'blow work', 'dipindi', 1, 2, 3, 2, '2026-04-23', NULL, 0, '2026-04-22 20:34:42', '2026-04-22 20:35:44');
+INSERT INTO `tasks` (`id`, `projectId`, `title`, `description`, `statusId`, `phaseId`, `severityId`, `assigneeId`, `qaAssigneeId`, `targetDate`, `actualEndDate`, `progress`, `createdAt`, `updatedAt`) VALUES
+(1, 1, 'Design login page', 'Create Figma mockup and implement HTML/CSS.', 1, 3, 2, 3, NULL, '2025-04-10', NULL, 0, '2026-04-18 14:45:08', '2026-04-24 10:51:21'),
+(2, 1, 'Write API docs', 'Document all Express routes via Postman.', 1, 6, 4, 5, 4, '2025-04-19', NULL, 0, '2026-04-18 14:45:08', '2026-04-24 10:59:38'),
+(3, 1, 'Build dashboard UI', 'Implement analytics dashboard with charts.', 2, 6, 2, 2, 4, '2025-04-14', NULL, 55, '2026-04-18 14:45:08', '2026-04-24 10:59:21'),
+(4, 1, 'Auth endpoints', 'Express JWT auth with bcrypt hashing.', 6, 7, 1, 4, 4, '2025-04-09', '2026-04-18', 100, '2026-04-18 14:45:08', '2026-04-24 10:58:15'),
+(5, 1, 'Project repo setup', 'Initialise GitHub repo and branch rules.', 8, 7, 3, 2, 4, '2025-03-31', NULL, 100, '2026-04-18 14:45:08', '2026-04-24 10:49:58'),
+(6, 1, 'Kanban Frontend', 'test data no. 1', 1, 3, 2, 3, NULL, '2026-04-22', NULL, 0, '2026-04-19 11:29:17', '2026-04-19 12:47:01'),
+(7, 2, 'Backshot ugh', 'mwehehe', 1, 2, 2, 6, NULL, '2026-04-29', NULL, 0, '2026-04-22 20:32:28', '2026-04-24 11:02:11'),
+(8, 2, 'blow work', 'dipindi', 1, 2, 3, 2, NULL, '2026-04-23', NULL, 0, '2026-04-22 20:34:42', '2026-04-22 20:35:44');
 
 -- --------------------------------------------------------
 
@@ -396,7 +432,8 @@ ALTER TABLE `tasks`
   ADD KEY `fk_task_phase` (`phaseId`),
   ADD KEY `fk_task_severity` (`severityId`),
   ADD KEY `fk_task_assignee` (`assigneeId`),
-  ADD KEY `fk_task_project` (`projectId`);
+  ADD KEY `fk_task_project` (`projectId`),
+  ADD KEY `fk_task_qa_assignee` (`qaAssigneeId`);
 
 --
 -- Indexes for table `task_attachments`
@@ -420,7 +457,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=99;
 
 --
 -- AUTO_INCREMENT for table `assessments`
@@ -505,6 +542,7 @@ ALTER TABLE `tasks`
   ADD CONSTRAINT `fk_task_assignee` FOREIGN KEY (`assigneeId`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `fk_task_phase` FOREIGN KEY (`phaseId`) REFERENCES `phases` (`id`),
   ADD CONSTRAINT `fk_task_project` FOREIGN KEY (`projectId`) REFERENCES `projects` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_task_qa_assignee` FOREIGN KEY (`qaAssigneeId`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_task_severity` FOREIGN KEY (`severityId`) REFERENCES `severities` (`id`),
   ADD CONSTRAINT `fk_task_status` FOREIGN KEY (`statusId`) REFERENCES `statuses` (`id`);
 
