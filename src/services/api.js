@@ -40,7 +40,10 @@ export const deletePhase  = (id)      => request("DELETE", `/phases/${id}`);
 export const fetchStatuses = () => request("GET", "/statuses");
 
 // ── Severities ────────────────────────────────────────────────
-export const fetchSeverities = () => request("GET", "/severities");
+export const fetchSeverities   = ()            => request("GET",    "/severities");
+export const createSeverity    = (payload)     => request("POST",   "/severities", payload);
+export const updateSeverity    = (id, payload) => request("PUT",    `/severities/${id}`, payload);
+export const deleteSeverity    = (id)          => request("DELETE", `/severities/${id}`);
 
 // ── Users ─────────────────────────────────────────────────────
 export const fetchUsers = () => request("GET", "/users");
@@ -55,8 +58,14 @@ export const updateProject  = (id, payload)   => request("PUT",    `/projects/${
 export const deleteProject  = (id)            => request("DELETE", `/projects/${id}`);
 
 // ── Tasks — updated fetchTasks to accept projectId ─────────────
-export const fetchTasks = (projectId) =>
-  request("GET", projectId ? `/tasks?projectId=${projectId}` : "/tasks");
+export const fetchTasks = (projectId, assignedUserId, grouping) => {
+  const params = new URLSearchParams();
+  if (projectId)      params.append("projectId",      projectId);
+  if (assignedUserId) params.append("assignedUserId", assignedUserId);
+  if (grouping)       params.append("grouping",       grouping);
+  const query = params.toString();
+  return request("GET", `/tasks${query ? `?${query}` : ""}`);
+};
 
 // ── Tasks ─────────────────────────────────────────────────────
 //export const fetchTasks = () => request("GET", "/tasks");

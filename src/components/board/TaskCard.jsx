@@ -3,11 +3,13 @@ import {
   formatShortDate,
   calcProgressFromSubtasks,
 } from "../../utils/kanbanUtils";
+import { AlertTriangle } from "lucide-react";
 
 /**
  * TaskCard
  * Works with task objects returned directly from the Express API.
- * DB field names: title, severityLabel, assigneeName, targetDate, progress, subtasks
+ * DB field names: title, severityLabel, assigneeName, qaAssigneeName,
+ *                 targetDate, progress, subtasks, phaseGrouping
  */
 export default function TaskCard({ task, onCardClick }) {
   // const severityKey =
@@ -17,11 +19,17 @@ export default function TaskCard({ task, onCardClick }) {
   //   SEVERITY_COLORS[task.severityLabel] ??
   //   SEVERITY_COLORS.Low;
 
-  const shortDate = formatShortDate(task.targetDate);
-  const subtasks = task.subtasks ?? [];
+  const shortDate    = formatShortDate(task.targetDate);
+  const subtasks     = task.subtasks ?? [];
   const subtaskTotal = subtasks.length;
-  const subtaskDone = subtasks.filter((s) => s.isDone || s.done).length;
-  const progress = calcProgressFromSubtasks(subtasks) ?? task.progress ?? 0;
+  const subtaskDone  = subtasks.filter((s) => s.isDone || s.done).length;
+  const progress     = calcProgressFromSubtasks(subtasks) ?? task.progress ?? 0;
+
+  // ── Determine active assignee based on phase grouping ─────
+  // If task is in a QA phase, show QA assignee; otherwise show dev assignee
+  const isQAPhase      = task.phaseGrouping === "qa";
+  const activeAssignee = isQAPhase ? task.qaAssigneeName : task.assigneeName;
+  const missingQA      = isQAPhase && !task.qaAssigneeId;
 
   // Click vs drag: only fire click on a short press (< 200ms)
   let mouseDownTime = 0;
@@ -48,7 +56,7 @@ export default function TaskCard({ task, onCardClick }) {
             className="text-xs font-semibold px-2 py-0.5 rounded-full"
             // style={{ color: sc.text, background: sc.bg }}
             style={{
-              color: task.severityColor,
+              color:      task.severityColor,
               background: task.severityColor + 20, // add alpha for bg
             }}
           >
@@ -67,13 +75,22 @@ export default function TaskCard({ task, onCardClick }) {
       {/* Title */}
       <p className="font-medium text-gray-800 leading-snug">{task.title}</p>
 
+      {/* No QA assigned warning — only shown when task is in a QA phase */}
+      {missingQA && (
+        <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200
+                        text-amber-600 text-xs rounded-lg px-2 py-1">
+          <AlertTriangle size={11} className="shrink-0" />
+          <span>No QA assigned</span>
+        </div>
+      )}
+
       {/* Progress bar */}
       {progress > 0 && (
         <div className="w-full bg-gray-100 rounded-full h-1.5">
           <div
             className="h-1.5 rounded-full transition-all duration-300"
             style={{
-              width: `${progress}%`,
+              width:      `${progress}%`,
               background: progress === 100 ? "#10b981" : "#3b82f6",
             }}
           />
@@ -93,13 +110,13 @@ export default function TaskCard({ task, onCardClick }) {
         </div>
       )}
 
-      {/* Footer: assignee + target date */}
+      {/* Footer: active assignee (dev or QA depending on phase) + target date */}
       <div className="flex items-center justify-between text-xs text-gray-400">
         <span className="flex items-center gap-1">
           <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-[10px]">
-            {task.assigneeName?.charAt(0)?.toUpperCase() ?? "?"}
+            {activeAssignee?.charAt(0)?.toUpperCase() ?? "?"}
           </span>
-          {task.assigneeName ?? "Unassigned"}
+          {activeAssignee ?? "Unassigned"}
         </span>
         {shortDate && <span>{shortDate}</span>}
       </div>

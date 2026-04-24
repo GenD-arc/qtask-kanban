@@ -5,7 +5,7 @@ import {
   calcProgressFromSubtasks,
   formatShortDate,
 } from "../../utils/kanbanUtils";
-import { Trash2 } from "lucide-react";
+import { Trash2, AlertTriangle } from "lucide-react";
 import FileUpload from "../ui/FileUpload";
 
 function normaliseSubtasks(subtasks) {
@@ -23,7 +23,11 @@ function normaliseSubtasks(subtasks) {
  *     The phase is changed by dragging the card on the board, NOT here.
  *   - "Status" (statusLabel) is the secondary workflow attribute (e.g.
  *     Open, For Verification, Closed). This IS editable here.
- *   - The edit form lets the PM update: Assignee, Severity, Status, Target date.
+ *   - The edit form lets the PM update: Assignee, QA Assignee, Severity,
+ *     Status, Target date.
+ *   - QA Assignee dropdown is filtered to only show users with role === "QA".
+ *   - An amber warning is shown in view mode if task is in a QA phase
+ *     but has no QA assignee.
  *
  * Props:
  *   task       — task object from the DB
@@ -49,21 +53,29 @@ export default function TaskDetailModal({
   const [newSubtaskTitle,  setNewSubtaskTitle]  = useState("");
   const [editMode,         setEditMode]         = useState(false);
   const [editForm,         setEditForm]         = useState({
-    assigneeId: task.assigneeId ?? "",
-    severityId: task.severityId ?? "",
-    statusId:   task.statusId   ?? "",   // workflow status — editable
-    targetDate: task.targetDate ? task.targetDate.split("T")[0] : "",
+    assigneeId:   task.assigneeId   ?? "",
+    qaAssigneeId: task.qaAssigneeId ?? "",   // QA assignee — separate from dev assignee
+    severityId:   task.severityId   ?? "",
+    statusId:     task.statusId     ?? "",   // workflow status — editable
+    targetDate:   task.targetDate ? task.targetDate.split("T")[0] : "",
   });
   const [saving,           setSaving]           = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting,         setDeleting]         = useState(false);
 
-  const doneCount = localSubtasks.filter((s) => s.isDone).length;
-  const progress  = calcProgressFromSubtasks(localSubtasks) ?? task.progress ?? 0;
-  const sc =
+  const doneCount  = localSubtasks.filter((s) => s.isDone).length;
+  const progress   = calcProgressFromSubtasks(localSubtasks) ?? task.progress ?? 0;
+  const sc         =
     SEVERITY_COLORS[task.severity] ??
     SEVERITY_COLORS[task.severityLabel] ??
     SEVERITY_COLORS.Low;
+
+  // ── Derived flags ─────────────────────────────────────────
+  const isQAPhase = task.phaseGrouping === "qa";
+  const missingQA = isQAPhase && !task.qaAssigneeId;
+
+  // ── User lists filtered by role ───────────────────────────
+  const qaUsers = users.filter((u) => u.role === "QA");
 
   const setField = (k, v) => setEditForm((prev) => ({ ...prev, [k]: v }));
 
@@ -72,12 +84,13 @@ export default function TaskDetailModal({
     setSaving(true);
     try {
       await onEdit(task.id, {
-        title:       task.title,
-        description: task.description,
-        assigneeId:  editForm.assigneeId ? Number(editForm.assigneeId) : null,
-        severityId:  editForm.severityId ? Number(editForm.severityId) : null,
-        statusId:    editForm.statusId   ? Number(editForm.statusId)   : null,
-        targetDate:  editForm.targetDate || null,
+        title:        task.title,
+        description:  task.description,
+        assigneeId:   editForm.assigneeId   ? Number(editForm.assigneeId)   : null,
+        qaAssigneeId: editForm.qaAssigneeId ? Number(editForm.qaAssigneeId) : null,
+        severityId:   editForm.severityId   ? Number(editForm.severityId)   : null,
+        statusId:     editForm.statusId     ? Number(editForm.statusId)     : null,
+        targetDate:   editForm.targetDate   || null,
       });
       setEditMode(false);
     } finally {
@@ -182,9 +195,19 @@ export default function TaskDetailModal({
             <p className="text-sm text-gray-600 leading-relaxed">{task.description}</p>
           )}
 
+          {/* No QA assigned warning banner — shown in view mode only */}
+          {missingQA && !editMode && (
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200
+                            text-amber-700 text-xs rounded-lg px-3 py-2">
+              <AlertTriangle size={13} className="shrink-0" />
+              <span>This task is in a QA phase but has no QA assignee. Edit to assign one.</span>
+            </div>
+          )}
+
           {!editMode ? (
             /* VIEW mode */
             <div className="grid grid-cols-2 gap-3">
+              {/* Dev assignee */}
               <div className="space-y-0.5">
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Assignee</p>
                 <div className="flex items-center gap-2">
@@ -194,6 +217,27 @@ export default function TaskDetailModal({
                   <span className="text-sm text-gray-700">
                     {task.assigneeName ?? task.assignee ?? "Unassigned"}
                   </span>
+                </div>
+              </div>
+
+              {/* QA assignee */}
+              <div className="space-y-0.5">
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">QA Assignee</p>
+                <div className="flex items-center gap-2">
+                  {task.qaAssigneeName ? (
+                    <>
+                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700
+                                       flex items-center justify-center font-semibold text-[10px]">
+                        {task.qaAssigneeName.charAt(0).toUpperCase()}
+                      </span>
+                      <span className="text-sm text-gray-700">{task.qaAssigneeName}</span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-amber-500 flex items-center gap-1">
+                      <AlertTriangle size={13} />
+                      Not assigned
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -234,9 +278,10 @@ export default function TaskDetailModal({
             /* EDIT mode */
             <div className="space-y-3">
               <p className="text-xs text-blue-600 font-medium">
-                Editing assignee, severity, status and target date
+                Editing assignee, QA assignee, severity, status and target date
               </p>
 
+              {/* Dev assignee — all users */}
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Assignee</label>
                 <select value={editForm.assigneeId} onChange={(e) => setField("assigneeId", e.target.value)}
@@ -244,6 +289,18 @@ export default function TaskDetailModal({
                   <option value="">Unassigned</option>
                   {users.map((u) => (
                     <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* QA assignee — filtered to QA role only */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">QA Assignee</label>
+                <select value={editForm.qaAssigneeId} onChange={(e) => setField("qaAssigneeId", e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 bg-white">
+                  <option value="">Unassigned</option>
+                  {qaUsers.map((u) => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
                 </select>
               </div>
@@ -259,6 +316,7 @@ export default function TaskDetailModal({
                 </select>
               </div>
 
+              {/* Status = workflow attribute, NOT the Kanban column */}
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Status (workflow)

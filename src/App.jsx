@@ -6,6 +6,7 @@ import {
   ChevronDown,
   FolderKanban,
 } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
 
 import KanbanBoard from "./components/board/KanbanBoard";
 import DoneModal from "./components/modals/DoneModal";
@@ -38,6 +39,7 @@ import {
   deleteTask,
   updateSubtasks,
 } from "./services/api";
+import SeverityPage from "./components/pages/SeverityPage";
 
 // ── Role → phase grouping (null = all phases) ─────────────────
 function getGrouping(role) {
@@ -240,13 +242,23 @@ function Board({ currentUser, logout }) {
       try {
         // All roles now scope tasks to the active project
         const data = await fetchTasks(activeProjectId ?? undefined);
+        const isQA = currentUser.role === "QA";
+        const isDev = currentUser.role === "Developer";
+
+        const data = await fetchTasks(
+          isPM ? activeProjectId : null,
+          // QA sees only tasks assigned to them as QA assignee
+          // Dev sees only tasks assigned to them as dev assignee
+          isQA || isDev ? currentUser.id : null,
+          isQA ? "qa" : isDev ? "dev" : null,
+        );
         setTasks(data);
       } catch (err) {
         console.error("Failed to load tasks:", err.message);
       }
     }
     loadTasks();
-  }, [activeProjectId, isPM]);
+  }, [activeProjectId, isPM, currentUser]);
 
   // ── Project switch ─────────────────────────────────────────
   const handleProjectChange = useCallback((projectId) => {
@@ -283,6 +295,12 @@ function Board({ currentUser, logout }) {
             prev.map((t) =>
               t.id === taskId
                 ? { ...t, phaseId: toPhaseId, phaseLabel: targetPhase?.label }
+                ? {
+                    ...t,
+                    phaseId: toPhaseId,
+                    phaseLabel: targetPhase?.label,
+                    phaseGrouping: targetPhase?.grouping,
+                  }
                 : t,
             ),
           );
@@ -422,6 +440,7 @@ function Board({ currentUser, logout }) {
     return tasks.filter((t) => t.assigneeId === filterUserId).length;
   }, [tasks, filterUserId]);
 
+  const totalTasks = tasks.length;
   const doneTask = doneModal ? findTask(doneModal.taskId) : null;
 
   // ── Loading ───────────────────────────────────────────────
@@ -694,6 +713,9 @@ function Board({ currentUser, logout }) {
 
       case "phases":
         return <PhasesPage />;
+
+      case "severities":
+        return <SeverityPage />;
 
       default:
         return (
