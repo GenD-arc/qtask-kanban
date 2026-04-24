@@ -30,6 +30,7 @@ import {
   deleteTask,
   updateSubtasks,
 } from "./services/api";
+import SeverityPage from "./components/pages/SeverityPage";
 
 // ── Role → phase grouping (null = all phases) ─────────────────
 function getGrouping(role) {
@@ -477,6 +478,9 @@ function Board({ currentUser, logout }) {
 
       case "phases":
         return <PhasesPage />;
+
+      case "severities":
+        return <SeverityPage />;
 
       default:
         return (

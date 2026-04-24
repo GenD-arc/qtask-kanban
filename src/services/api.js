@@ -40,7 +40,10 @@ export const deletePhase  = (id)      => request("DELETE", `/phases/${id}`);
 export const fetchStatuses = () => request("GET", "/statuses");
 
 // ── Severities ────────────────────────────────────────────────
-export const fetchSeverities = () => request("GET", "/severities");
+export const fetchSeverities   = ()            => request("GET",    "/severities");
+export const createSeverity    = (payload)     => request("POST",   "/severities", payload);
+export const updateSeverity    = (id, payload) => request("PUT",    `/severities/${id}`, payload);
+export const deleteSeverity    = (id)          => request("DELETE", `/severities/${id}`);
 
 // ── Users ─────────────────────────────────────────────────────
 export const fetchUsers = () => request("GET", "/users");
