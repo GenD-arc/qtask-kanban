@@ -1,18 +1,19 @@
 import { useState, useCallback, useEffect } from "react";
 
-import KanbanBoard     from "./components/board/KanbanBoard";
-import DoneModal       from "./components/modals/DoneModal";
-import AddTaskModal    from "./components/modals/AddTaskModal";
-import AddColumnModal  from "./components/modals/AddColumnModal";
+import KanbanBoard from "./components/board/KanbanBoard";
+import DoneModal from "./components/modals/DoneModal";
+import AddTaskModal from "./components/modals/AddTaskModal";
+import AddColumnModal from "./components/modals/AddColumnModal";
 import TaskDetailModal from "./components/modals/TaskDetailModal";
-import LoginPage       from "./components/auth/LoginPage";
-import Sidebar         from "./components/layout/Sidebar";
+import LoginPage from "./components/auth/LoginPage";
+import Sidebar from "./components/layout/Sidebar";
 import ActivityLogPage from "./components/pages/ActivityLogPage";
-import AllTasksPage    from "./components/pages/AllTasksPage";
+import AllTasksPage from "./components/pages/AllTasksPage";
 import UserManagementPage from "./components/pages/UserManagementPage";
-import ProjectsPage    from "./components/pages/ProjectsPage";
+import ProjectsPage from "./components/pages/ProjectsPage";
+import PhasesPage from "./components/pages/PhasesPage";
 
-import { useAuth }        from "./context/useAuth";
+import { useAuth } from "./context/useAuth";
 import { getDefaultPage } from "./config/navigation";
 
 import {
@@ -33,7 +34,7 @@ import {
 // ── Role → phase grouping (null = all phases) ─────────────────
 function getGrouping(role) {
   if (role === "Developer") return "dev";
-  if (role === "QA")        return "qa";
+  if (role === "QA") return "qa";
   return null;
 }
 
@@ -51,24 +52,26 @@ export default function App() {
 
 // ─────────────────────────────────────────────────────────────
 function Board({ currentUser, logout }) {
-  const [activePage,      setActivePage]      = useState(() => getDefaultPage(currentUser.role));
-  const [projects,        setProjects]        = useState([]);
+  const [activePage, setActivePage] = useState(() =>
+    getDefaultPage(currentUser.role),
+  );
+  const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
-  const [devPhases,       setDevPhases]       = useState([]);
-  const [qaPhases,        setQaPhases]        = useState([]);
-  const [statuses,        setStatuses]        = useState([]);
-  const [severities,      setSeverities]      = useState([]);
-  const [tasks,           setTasks]           = useState([]);
-  const [users,           setUsers]           = useState([]);
-  const [loading,         setLoading]         = useState(true);
-  const [error,           setError]           = useState(null);
-  const [renderKey,       setRenderKey]       = useState(0);
-  const [doneModal,       setDoneModal]       = useState(null);
-  const [showAddTask,     setShowAddTask]     = useState(false);
-  const [showAddColumn,   setShowAddColumn]   = useState(false);
-  const [detailTask,      setDetailTask]      = useState(null);
+  const [devPhases, setDevPhases] = useState([]);
+  const [qaPhases, setQaPhases] = useState([]);
+  const [statuses, setStatuses] = useState([]);
+  const [severities, setSeverities] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [renderKey, setRenderKey] = useState(0);
+  const [doneModal, setDoneModal] = useState(null);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [showAddColumn, setShowAddColumn] = useState(false);
+  const [detailTask, setDetailTask] = useState(null);
 
-  const isPM     = isPMRole(currentUser.role);
+  const isPM = isPMRole(currentUser.role);
   const grouping = getGrouping(currentUser.role);
   const allPhases = [...devPhases, ...qaPhases];
 
@@ -87,7 +90,7 @@ function Board({ currentUser, logout }) {
         ] = await Promise.all([
           isPM ? fetchProjects() : Promise.resolve([]),
           isPM ? fetchPhases("dev") : fetchPhases(grouping),
-          isPM ? fetchPhases("qa")  : Promise.resolve([]),
+          isPM ? fetchPhases("qa") : Promise.resolve([]),
           fetchStatuses(),
           fetchSeverities(),
           fetchUsers(),
@@ -115,25 +118,25 @@ function Board({ currentUser, logout }) {
 
   // ── Load tasks whenever activeProjectId changes ────────────
   useEffect(() => {
-  async function loadTasks() {
-    try {
-      const isQA  = currentUser.role === "QA";
-      const isDev = currentUser.role === "Developer";
+    async function loadTasks() {
+      try {
+        const isQA = currentUser.role === "QA";
+        const isDev = currentUser.role === "Developer";
 
-      const data = await fetchTasks(
-        isPM  ? activeProjectId  : null,
-        // QA sees only tasks assigned to them as QA assignee
-        // Dev sees only tasks assigned to them as dev assignee
-        (isQA || isDev) ? currentUser.id : null,
-        isQA  ? "qa"  : isDev ? "dev" : null
-      );
-      setTasks(data);
-    } catch (err) {
-      console.error("Failed to load tasks:", err.message);
+        const data = await fetchTasks(
+          isPM ? activeProjectId : null,
+          // QA sees only tasks assigned to them as QA assignee
+          // Dev sees only tasks assigned to them as dev assignee
+          isQA || isDev ? currentUser.id : null,
+          isQA ? "qa" : isDev ? "dev" : null,
+        );
+        setTasks(data);
+      } catch (err) {
+        console.error("Failed to load tasks:", err.message);
+      }
     }
-  }
-  loadTasks();
-}, [activeProjectId, isPM, currentUser]);
+    loadTasks();
+  }, [activeProjectId, isPM, currentUser]);
 
   // ── Project switch ─────────────────────────────────────────
   const handleProjectChange = useCallback((projectId) => {
@@ -149,7 +152,7 @@ function Board({ currentUser, logout }) {
 
   const findTask = useCallback(
     (taskId) => tasks.find((t) => t.id === taskId),
-    [tasks]
+    [tasks],
   );
 
   // ── Drag end ──────────────────────────────────────────────
@@ -164,23 +167,30 @@ function Board({ currentUser, logout }) {
           setTasks((prev) =>
             prev.map((t) =>
               t.id === taskId
-                ? { ...t, phaseId: toPhaseId, phaseLabel: targetPhase?.label, phaseGrouping: targetPhase?.grouping, }
-                : t
-            )
+                ? {
+                    ...t,
+                    phaseId: toPhaseId,
+                    phaseLabel: targetPhase?.label,
+                    phaseGrouping: targetPhase?.grouping,
+                  }
+                : t,
+            ),
           );
           setRenderKey((k) => k + 1);
           await moveTask(taskId, toPhaseId);
         } catch (err) {
           console.error("Move failed:", err.message);
           setTasks((prev) =>
-            prev.map((t) => (t.id === taskId ? { ...t, phaseId: fromPhaseId } : t))
+            prev.map((t) =>
+              t.id === taskId ? { ...t, phaseId: fromPhaseId } : t,
+            ),
           );
           setRenderKey((k) => k + 1);
           alert(`Move failed: ${err.message}`);
         }
       }
     },
-    [allPhases]
+    [allPhases],
   );
 
   // ── Done modal confirm ────────────────────────────────────
@@ -195,13 +205,13 @@ function Board({ currentUser, logout }) {
             t.id === taskId
               ? {
                   ...t,
-                  phaseId:       targetPhaseId,
-                  phaseLabel:    targetPhase?.label,
+                  phaseId: targetPhaseId,
+                  phaseLabel: targetPhase?.label,
                   actualEndDate,
-                  progress:      100,
+                  progress: 100,
                 }
-              : t
-          )
+              : t,
+          ),
         );
         setRenderKey((k) => k + 1);
         const updated = await moveTask(taskId, targetPhaseId, actualEndDate);
@@ -213,50 +223,54 @@ function Board({ currentUser, logout }) {
         setDoneModal(null);
       }
     },
-    [doneModal, allPhases]
+    [doneModal, allPhases],
   );
 
   // ── Add task ──────────────────────────────────────────────
-  const handleAddTask = useCallback(async (formData) => {
-    try {
-      const newTask = await createTask({
-        ...formData,
-        projectId: activeProjectId,
-      });
-      setTasks((prev) => [newTask, ...prev]);
-      setShowAddTask(false);
-      setRenderKey((k) => k + 1);
-    } catch (err) {
-      console.error("Create task failed:", err.message);
-      alert(`Failed to create task: ${err.message}`);
-    }
-  }, [activeProjectId]);
+  const handleAddTask = useCallback(
+    async (formData) => {
+      try {
+        const newTask = await createTask({
+          ...formData,
+          projectId: activeProjectId,
+        });
+        setTasks((prev) => [newTask, ...prev]);
+        setShowAddTask(false);
+        setRenderKey((k) => k + 1);
+      } catch (err) {
+        console.error("Create task failed:", err.message);
+        alert(`Failed to create task: ${err.message}`);
+      }
+    },
+    [activeProjectId],
+  );
 
   // ── Add column ────────────────────────────────────────────
   const handleAddColumn = useCallback(
     async ({ label, isFinal, isDefault }) => {
       const maxOrder = allPhases.reduce(
-        (max, p) => Math.max(max, p.sortOrder ?? 0), 0
+        (max, p) => Math.max(max, p.sortOrder ?? 0),
+        0,
       );
       const saved = await createPhase({
         label,
-        isFinal:   isFinal   ? 1 : 0,
+        isFinal: isFinal ? 1 : 0,
         isDefault: isDefault ? 1 : 0,
         sortOrder: maxOrder + 1,
       });
       if (saved.grouping === "dev") setDevPhases((prev) => [...prev, saved]);
-      else                          setQaPhases((prev)  => [...prev, saved]);
+      else setQaPhases((prev) => [...prev, saved]);
       setShowAddColumn(false);
       setRenderKey((k) => k + 1);
     },
-    [allPhases]
+    [allPhases],
   );
 
   // ── Edit task ─────────────────────────────────────────────
   const handleEditTask = useCallback(async (taskId, payload) => {
     try {
       const updated = await updateTask(taskId, payload);
-      setTasks((prev)      => prev.map((t) => (t.id === taskId ? updated : t)));
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
       setDetailTask((prev) => (prev?.id === taskId ? updated : prev));
     } catch (err) {
       console.error("Edit task failed:", err.message);
@@ -293,7 +307,7 @@ function Board({ currentUser, logout }) {
   }, []);
 
   const totalTasks = tasks.length;
-  const doneTask   = doneModal ? findTask(doneModal.taskId) : null;
+  const doneTask = doneModal ? findTask(doneModal.taskId) : null;
 
   // ── Loading ───────────────────────────────────────────────
   if (loading) {
@@ -309,7 +323,9 @@ function Board({ currentUser, logout }) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-2xl shadow p-6 max-w-sm text-center space-y-3">
-          <p className="text-red-500 font-semibold">Could not connect to the server</p>
+          <p className="text-red-500 font-semibold">
+            Could not connect to the server
+          </p>
           <p className="text-sm text-gray-500">{error}</p>
           <p className="text-xs text-gray-400">
             Make sure the Express backend is running on{" "}
@@ -355,7 +371,6 @@ function Board({ currentUser, logout }) {
   // ── Page content ──────────────────────────────────────────
   const renderPage = () => {
     switch (activePage) {
-
       case "overview":
       case "kanban":
         return (
@@ -407,17 +422,14 @@ function Board({ currentUser, logout }) {
       case "my-tasks":
         return (
           <>
-            <KanbanHeader
-              title="My Tasks"
-              subtitle="Tasks assigned to you"
-            />
+            <KanbanHeader title="My Tasks" subtitle="Tasks assigned to you" />
             <KanbanBoard
               columns={devPhases}
               tasks={Object.fromEntries(
                 Object.entries(tasksByPhase).map(([phaseId, phaseTasks]) => [
                   phaseId,
                   phaseTasks.filter((t) => t.assigneeId === currentUser.id),
-                ])
+                ]),
               )}
               renderKey={renderKey}
               onDragEnd={handleDragEnd}
@@ -463,11 +475,16 @@ function Board({ currentUser, logout }) {
       case "projects":
         return <ProjectsPage users={users} />;
 
+      case "phases":
+        return <PhasesPage />;
+
       default:
         return (
           <div className="flex items-center justify-center h-full">
             <div className="text-center space-y-2">
-              <p className="text-gray-400 font-medium">This page is under development</p>
+              <p className="text-gray-400 font-medium">
+                This page is under development
+              </p>
               <p className="text-sm text-gray-300">Check back later</p>
             </div>
           </div>
@@ -478,7 +495,6 @@ function Board({ currentUser, logout }) {
   // ── Render ────────────────────────────────────────────────
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
-
       <Sidebar
         currentUser={currentUser}
         activePage={activePage}
@@ -489,9 +505,7 @@ function Board({ currentUser, logout }) {
         onProjectChange={handleProjectChange}
       />
 
-      <main className="flex-1 overflow-y-auto p-6">
-        {renderPage()}
-      </main>
+      <main className="flex-1 overflow-y-auto p-6">{renderPage()}</main>
 
       {detailTask && (
         <TaskDetailModal
