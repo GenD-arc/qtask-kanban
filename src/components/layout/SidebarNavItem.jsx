@@ -18,23 +18,51 @@ export default function SidebarNavItem({ item, isActive, collapsed, onClick }) {
       onClick={() => !item.underDevelopment && onClick(item.key)}
       title={collapsed ? item.label : undefined}
       className={clsx(
-        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors relative",
-        isActive
-          ? "bg-blue-50 text-blue-600 font-medium"
-          : "text-gray-500 hover:bg-gray-100 hover:text-gray-700",
-        item.underDevelopment && "opacity-50 cursor-not-allowed"
+        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all relative",
+        item.underDevelopment && "opacity-40 cursor-not-allowed"
       )}
+      style={
+        isActive
+          ? {
+              background: "rgba(59,130,246,0.18)",
+              color: "#93c5fd",
+              borderLeft: "2px solid #3b82f6",
+              paddingLeft: "10px", // compensate for border
+              fontWeight: 600,
+            }
+          : {
+              color: "#94a3b8",
+              borderLeft: "2px solid transparent",
+            }
+      }
+      onMouseEnter={(e) => {
+        if (!isActive && !item.underDevelopment) {
+          e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+          e.currentTarget.style.color = "#e2e8f0";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isActive && !item.underDevelopment) {
+          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.color = "#94a3b8";
+        }
+      }}
     >
       {/* Icon */}
-      <Icon size={18} className="shrink-0" />
+      <Icon size={17} className="shrink-0" />
 
       {/* Label + badge — hidden when collapsed */}
       {!collapsed && (
         <span className="flex items-center justify-between w-full">
-          <span className="truncate">{item.label}</span>
+          <span className="truncate text-sm font-medium">
+            {item.label}
+          </span>
           {item.underDevelopment && (
-            <span className="text-[10px] font-medium bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full whitespace-nowrap">
-              Under Development
+            <span
+              className="text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap uppercase tracking-wider"
+              style={{ background: "rgba(255,255,255,0.08)", color: "#94a3b8" }}
+            >
+              Soon
             </span>
           )}
         </span>

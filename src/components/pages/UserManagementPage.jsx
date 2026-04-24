@@ -1,42 +1,100 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { UserPlus, Pencil, Trash2, KeyRound, PowerOff, Power } from "lucide-react";
+import { UserPlus, Pencil, Trash2, KeyRound, PowerOff, Power, Users, ShieldCheck, Code2, TestTube2 } from "lucide-react";
 import { clsx } from "clsx";
 import {
   fetchAllUsers,
   createUser,
   updateUser,
-  resetUserPassword,
   toggleUserStatus,
   deleteUser,
 } from "../../services/api";
+import { UserFormModal, ResetPasswordModal, DeleteUserModal } from "../modals/UserModal";
 
-// ── Constants ─────────────────────────────────────────────────
 const ROLES = ["Admin", "ProjectManager", "Developer", "QA"];
 
 const ROLE_COLORS = {
-  Admin:          "bg-red-100 text-red-600",
-  ProjectManager: "bg-purple-100 text-purple-600",
-  Developer:      "bg-blue-100 text-blue-600",
-  QA:             "bg-green-100 text-green-600",
+  Admin:          { bg: "#fef2f2", color: "#ef4444", border: "#ef444430" },
+  ProjectManager: { bg: "#f5f3ff", color: "#8b5cf6", border: "#8b5cf630" },
+  Developer:      { bg: "#eff6ff", color: "#3b82f6", border: "#3b82f630" },
+  QA:             { bg: "#f0fdf4", color: "#10b981", border: "#10b98130" },
 };
 
-// ── Sub-components ────────────────────────────────────────────
+const ACTION_COLORS = {
+  blue:   "text-blue-400 hover:text-blue-600 hover:bg-blue-50",
+  yellow: "text-yellow-400 hover:text-yellow-600 hover:bg-yellow-50",
+  orange: "text-orange-400 hover:text-orange-600 hover:bg-orange-50",
+  green:  "text-green-400 hover:text-green-600 hover:bg-green-50",
+  red:    "text-red-400 hover:text-red-600 hover:bg-red-50",
+};
+
+function KpiCard({ label, value, accent, sub, icon: Icon }) {
+  return (
+    <div
+      className="rounded-xl p-4 flex flex-col gap-1 relative overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, #0f172a 60%, #1e3a5f)",
+        border: `1px solid ${accent}40`,
+      }}
+    >
+      <div
+        className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-20 blur-2xl"
+        style={{ background: accent }}
+      />
+      {Icon && (
+        <div className="absolute top-3 right-4 opacity-10">
+          <Icon size={32} color={accent} />
+        </div>
+      )}
+      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</span>
+      <span className="text-3xl font-black text-white leading-none">{value}</span>
+      {sub && <span className="text-[10px] text-slate-500 mt-0.5">{sub}</span>}
+    </div>
+  );
+}
+
+function SectionCard({ title, toolbar, children }) {
+  return (
+    <div
+      className="rounded-xl overflow-hidden bg-white"
+      style={{ border: "1px solid #e2e8f0", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
+    >
+      <div
+        className="px-5 py-3 text-[11px] font-black uppercase tracking-widest text-white"
+        style={{ background: "linear-gradient(90deg, #0f172a, #1e3a5f)" }}
+      >
+        {title}
+      </div>
+      {toolbar && (
+        <div
+          className="px-5 py-3 flex flex-wrap items-center gap-3"
+          style={{ borderBottom: "1px solid #f1f5f9", background: "#fafafa" }}
+        >
+          {toolbar}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
 
 function Avatar({ name }) {
   return (
-    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600
-                    flex items-center justify-center text-xs font-bold uppercase shrink-0">
-      {name.charAt(0)}
+    <div
+      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+      style={{ background: "linear-gradient(135deg, #1e3a5f, #3b82f6)" }}
+    >
+      {name.charAt(0).toUpperCase()}
     </div>
   );
 }
 
 function RoleBadge({ role }) {
+  const cfg = ROLE_COLORS[role] ?? { bg: "#f1f5f9", color: "#64748b", border: "#64748b30" };
   return (
-    <span className={clsx(
-      "text-xs font-medium px-2 py-1 rounded-full",
-      ROLE_COLORS[role] ?? "bg-gray-100 text-gray-500"
-    )}>
+    <span
+      className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
+      style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}
+    >
       {role}
     </span>
   );
@@ -44,295 +102,55 @@ function RoleBadge({ role }) {
 
 function StatusBadge({ isActive }) {
   return (
-    <span className={clsx(
-      "text-xs font-medium px-2 py-1 rounded-full",
-      isActive ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"
-    )}>
+    <span
+      className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
+      style={
+        isActive
+          ? { background: "#f0fdf4", color: "#10b981", border: "1px solid #10b98130" }
+          : { background: "#f8fafc", color: "#94a3b8", border: "1px solid #94a3b830" }
+      }
+    >
       {isActive ? "Active" : "Inactive"}
     </span>
   );
 }
 
-// ── User Form Modal ───────────────────────────────────────────
-function UserFormModal({ user, onSave, onClose }) {
-  const isEdit = !!user;
-  const [form,    setForm]    = useState({
-    name:     user?.name     ?? "",
-    username: user?.username ?? "",
-    role:     user?.role     ?? "Developer",
-    password: "",
-  });
-  const [error,   setError]   = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async () => {
-    setError(null);
-    if (!form.name.trim())     return setError("Name is required.");
-    if (!form.username.trim()) return setError("Username is required.");
-    if (!isEdit && !form.password.trim()) return setError("Password is required.");
-    if (!isEdit && form.password.length < 6) return setError("Password must be at least 6 characters.");
-
-    try {
-      setLoading(true);
-      const payload = isEdit
-        ? { name: form.name, username: form.username, role: form.role }
-        : { name: form.name, username: form.username, role: form.role, password: form.password };
-      await onSave(payload);
-      onClose();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function ActionButton({ icon, label, onClick, color }) {
   return (
-    <ModalShell title={isEdit ? "Edit User" : "Add User"} onClose={onClose}>
-      <div className="space-y-4">
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
-            {error}
-          </div>
-        )}
-
-        <Field label="Full Name">
-          <input
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            placeholder="e.g. Juan Dela Cruz"
-            className={inputClass}
-          />
-        </Field>
-
-        <Field label="Username">
-          <input
-            name="username"
-            value={form.username}
-            onChange={handleChange}
-            placeholder="e.g. juan"
-            className={inputClass}
-          />
-        </Field>
-
-        <Field label="Role">
-          <select
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            className={inputClass}
-          >
-            {ROLES.map((r) => (
-              <option key={r} value={r}>{r}</option>
-            ))}
-          </select>
-        </Field>
-
-        {!isEdit && (
-          <Field label="Password">
-            <input
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Min. 6 characters"
-              className={inputClass}
-            />
-          </Field>
-        )}
-
-        <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className={secondaryBtn}>Cancel</button>
-          <button onClick={handleSubmit} disabled={loading} className={primaryBtn}>
-            {loading ? "Saving…" : isEdit ? "Save Changes" : "Add User"}
-          </button>
-        </div>
-      </div>
-    </ModalShell>
+    <button
+      onClick={onClick}
+      title={label}
+      className={clsx("p-1.5 rounded-lg transition-colors", ACTION_COLORS[color])}
+    >
+      {icon}
+    </button>
   );
 }
 
-// ── Reset Password Modal ──────────────────────────────────────
-function ResetPasswordModal({ user, onClose }) {
-  const [password, setPassword] = useState("");
-  const [confirm,  setConfirm]  = useState("");
-  const [error,    setError]    = useState(null);
-  const [success,  setSuccess]  = useState(false);
-  const [loading,  setLoading]  = useState(false);
+const filterSelectClass =
+  "border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer";
 
-  const handleSubmit = async () => {
-    setError(null);
-    if (!password.trim())       return setError("Password is required.");
-    if (password.length < 6)    return setError("Password must be at least 6 characters.");
-    if (password !== confirm)   return setError("Passwords do not match.");
-
-    try {
-      setLoading(true);
-      await resetUserPassword(user.id, password);
-      setSuccess(true);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <ModalShell title={`Reset Password — ${user.name}`} onClose={onClose}>
-      <div className="space-y-4">
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
-            {error}
-          </div>
-        )}
-        {success ? (
-          <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 text-green-600 text-sm rounded-lg px-4 py-3">
-              Password reset successfully.
-            </div>
-            <div className="flex justify-end">
-              <button onClick={onClose} className={primaryBtn}>Done</button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <Field label="New Password">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min. 6 characters"
-                className={inputClass}
-              />
-            </Field>
-            <Field label="Confirm Password">
-              <input
-                type="password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Re-enter password"
-                className={inputClass}
-              />
-            </Field>
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={onClose} className={secondaryBtn}>Cancel</button>
-              <button onClick={handleSubmit} disabled={loading} className={primaryBtn}>
-                {loading ? "Resetting…" : "Reset Password"}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </ModalShell>
-  );
-}
-
-// ── Delete Confirm Modal ──────────────────────────────────────
-function DeleteConfirmModal({ user, onConfirm, onClose }) {
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
-
-  const handleConfirm = async () => {
-    try {
-      setLoading(true);
-      await onConfirm();
-      onClose();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <ModalShell title="Delete User" onClose={onClose}>
-      <div className="space-y-4">
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
-            {error}
-          </div>
-        )}
-        <p className="text-sm text-gray-600">
-          Are you sure you want to permanently delete{" "}
-          <span className="font-semibold text-gray-800">{user.name}</span>?
-          This action cannot be undone.
-        </p>
-        <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className={secondaryBtn}>Cancel</button>
-          <button
-            onClick={handleConfirm}
-            disabled={loading}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm
-                       font-medium hover:bg-red-700 transition disabled:opacity-50"
-          >
-            {loading ? "Deleting…" : "Delete"}
-          </button>
-        </div>
-      </div>
-    </ModalShell>
-  );
-}
-
-// ── Shared modal shell ────────────────────────────────────────
-function ModalShell({ title, onClose, children }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-         style={{ background: "rgba(0,0,0,0.3)" }}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-base font-semibold text-gray-800">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition text-xl leading-none">
-            ×
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// ── Shared form helpers ───────────────────────────────────────
-function Field({ label, children }) {
-  return (
-    <div className="space-y-1">
-      <label className="text-xs font-medium text-gray-500">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-const inputClass    = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white";
-const primaryBtn    = "px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50";
-const secondaryBtn  = "px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition";
-
-// ── Main component ────────────────────────────────────────────
 export default function UserManagementPage({ currentUser }) {
   const [users,   setUsers]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
+  const [fadeIn,  setFadeIn]  = useState(false);
 
-  // ── Modal state ───────────────────────────────────────────
-  const [addModal,      setAddModal]      = useState(false);
-  const [editTarget,    setEditTarget]    = useState(null);
-  const [resetTarget,   setResetTarget]   = useState(null);
-  const [deleteTarget,  setDeleteTarget]  = useState(null);
+  const [addModal,     setAddModal]     = useState(false);
+  const [editTarget,   setEditTarget]   = useState(null);
+  const [resetTarget,  setResetTarget]  = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // ── Filter state ──────────────────────────────────────────
   const [roleFilter,   setRoleFilter]   = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  // ── Fetch ─────────────────────────────────────────────────
   const load = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await fetchAllUsers();
       setUsers(data);
+      setTimeout(() => setFadeIn(true), 50);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -342,7 +160,6 @@ export default function UserManagementPage({ currentUser }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // ── Filtered users ────────────────────────────────────────
   const visibleUsers = useMemo(() => {
     let result = users;
     if (roleFilter)   result = result.filter((u) => u.role === roleFilter);
@@ -352,7 +169,6 @@ export default function UserManagementPage({ currentUser }) {
     return result;
   }, [users, roleFilter, statusFilter]);
 
-  // ── Handlers ──────────────────────────────────────────────
   const handleAdd = useCallback(async (payload) => {
     const newUser = await createUser(payload);
     setUsers((prev) => [...prev, newUser]);
@@ -373,229 +189,187 @@ export default function UserManagementPage({ currentUser }) {
     setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
   }, [deleteTarget]);
 
-  // ── Render ────────────────────────────────────────────────
+  const activeCount = users.filter((u) => u.isActive).length;
+  const devCount    = users.filter((u) => u.role === "Developer").length;
+  const qaCount     = users.filter((u) => u.role === "QA").length;
+  const pmCount     = users.filter((u) => u.role === "ProjectManager" || u.role === "Admin").length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+          <p className="text-slate-400 text-xs font-bold tracking-widest uppercase">Loading users</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div style={{ fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif" }}>
 
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
-          <p className="text-sm text-gray-400 mt-0.5">
-            {users.filter((u) => u.isActive).length} active · {users.length} total
-          </p>
+      {/* ── Animated content ── */}
+      <div
+        className="space-y-6 pb-10"
+        style={{
+          opacity: fadeIn ? 1 : 0,
+          transform: fadeIn ? "translateY(0)" : "translateY(8px)",
+          transition: "opacity 0.35s ease, transform 0.35s ease",
+        }}
+      >
+        {/* Page header */}
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Administration</p>
+            <h1 className="text-2xl font-black text-slate-800 leading-none">User Management</h1>
+          </div>
+          <button
+            onClick={() => setAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-semibold rounded-xl transition hover:opacity-90"
+            style={{ background: "linear-gradient(135deg, #1e3a5f, #1e40af)", border: "1px solid #1e40af40" }}
+          >
+            <UserPlus size={15} />
+            Add User
+          </button>
         </div>
-        <button
-          onClick={() => setAddModal(true)}
-          className={clsx(primaryBtn, "flex items-center gap-2")}
+
+        {/* KPI row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <KpiCard label="Active Users" value={activeCount} accent="#10b981" sub={`of ${users.length} total`} icon={Users}       />
+          <KpiCard label="Managers"     value={pmCount}     accent="#8b5cf6" sub="admins & project managers"  icon={ShieldCheck} />
+          <KpiCard label="Developers"   value={devCount}    accent="#3b82f6" sub="in dev team"                icon={Code2}       />
+          <KpiCard label="QA Engineers" value={qaCount}     accent="#f59e0b" sub="in QA team"                 icon={TestTube2}   />
+        </div>
+
+        {/* Table with inline filters */}
+        <SectionCard
+          title="All Users"
+          toolbar={
+            <>
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className={filterSelectClass}
+              >
+                <option value="">All roles</option>
+                {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className={filterSelectClass}
+              >
+                <option value="">All statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+
+              {(roleFilter || statusFilter) && (
+                <button
+                  onClick={() => { setRoleFilter(""); setStatusFilter(""); }}
+                  className="text-xs font-semibold text-slate-400 hover:text-slate-600 transition"
+                >
+                  Clear
+                </button>
+              )}
+            </>
+          }
         >
-          <UserPlus size={15} />
-          Add User
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-4">
-        <div className="flex flex-wrap gap-3 items-end">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">Role</label>
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className={clsx(inputClass, "w-44")}
-            >
-              <option value="">All roles</option>
-              {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">Status</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className={clsx(inputClass, "w-36")}
-            >
-              <option value="">All statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
-          {(roleFilter || statusFilter) && (
-            <button
-              onClick={() => { setRoleFilter(""); setStatusFilter(""); }}
-              className={secondaryBtn}
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <p className="text-sm text-gray-400">Loading users…</p>
-          </div>
-        ) : error ? (
-          <div className="flex items-center justify-center py-16">
-            <p className="text-sm text-red-400">{error}</p>
-          </div>
-        ) : visibleUsers.length === 0 ? (
-          <div className="flex items-center justify-center py-16">
-            <p className="text-sm text-gray-400">No users found</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  {["Name", "Username", "Role", "Status", "Actions"].map((col) => (
-                    <th
-                      key={col}
-                      className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap"
+          {error ? (
+            <div className="flex items-center justify-center py-16">
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          ) : visibleUsers.length === 0 ? (
+            <div className="flex items-center justify-center py-16">
+              <p className="text-sm text-slate-400">No users found.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    {["Name", "Username", "Role", "Status", "Actions"].map((col) => (
+                      <th
+                        key={col}
+                        className="text-left px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap"
+                      >
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleUsers.map((user, i) => (
+                    <tr
+                      key={user.id}
+                      className="transition-colors hover:bg-slate-50"
+                      style={{
+                        borderBottom: i < visibleUsers.length - 1 ? "1px solid #f8fafc" : "none",
+                        opacity: user.isActive ? 1 : 0.45,
+                      }}
                     >
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {visibleUsers.map((user) => (
-                  <tr
-                    key={user.id}
-                    className={clsx(
-                      "transition-colors",
-                      !user.isActive && "opacity-50"
-                    )}
-                  >
-                    {/* Name */}
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <Avatar name={user.name} />
-                        <div>
-                          <p className="font-medium text-gray-800">{user.name}</p>
-                          {user.id === currentUser.id && (
-                            <p className="text-xs text-blue-400">You</p>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <Avatar name={user.name} />
+                          <div>
+                            <p className="font-semibold text-slate-800">{user.name}</p>
+                            {user.id === currentUser.id && (
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400">You</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-5 py-3.5 text-slate-400 text-xs">
+                        @{user.username}
+                      </td>
+
+                      <td className="px-5 py-3.5">
+                        <RoleBadge role={user.role} />
+                      </td>
+
+                      <td className="px-5 py-3.5">
+                        <StatusBadge isActive={user.isActive} />
+                      </td>
+
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-1">
+                          <ActionButton icon={<Pencil size={14} />}  label="Edit"           onClick={() => setEditTarget(user)}   color="blue"   />
+                          <ActionButton icon={<KeyRound size={14} />} label="Reset Password" onClick={() => setResetTarget(user)}  color="yellow" />
+                          <ActionButton
+                            icon={user.isActive ? <PowerOff size={14} /> : <Power size={14} />}
+                            label={user.isActive ? "Deactivate" : "Reactivate"}
+                            onClick={() => handleToggleStatus(user)}
+                            color={user.isActive ? "orange" : "green"}
+                          />
+                          {user.id !== currentUser.id && (
+                            <ActionButton icon={<Trash2 size={14} />} label="Delete" onClick={() => setDeleteTarget(user)} color="red" />
                           )}
                         </div>
-                      </div>
-                    </td>
-
-                    {/* Username */}
-                    <td className="px-5 py-3.5 text-gray-500">
-                      @{user.username}
-                    </td>
-
-                    {/* Role */}
-                    <td className="px-5 py-3.5">
-                      <RoleBadge role={user.role} />
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-5 py-3.5">
-                      <StatusBadge isActive={user.isActive} />
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-1">
-
-                        {/* Edit */}
-                        <ActionButton
-                          icon={<Pencil size={14} />}
-                          label="Edit"
-                          onClick={() => setEditTarget(user)}
-                          color="blue"
-                        />
-
-                        {/* Reset password */}
-                        <ActionButton
-                          icon={<KeyRound size={14} />}
-                          label="Reset Password"
-                          onClick={() => setResetTarget(user)}
-                          color="yellow"
-                        />
-
-                        {/* Toggle status */}
-                        <ActionButton
-                          icon={user.isActive ? <PowerOff size={14} /> : <Power size={14} />}
-                          label={user.isActive ? "Deactivate" : "Reactivate"}
-                          onClick={() => handleToggleStatus(user)}
-                          color={user.isActive ? "orange" : "green"}
-                        />
-
-                        {/* Delete — blocked for self */}
-                        {user.id !== currentUser.id && (
-                          <ActionButton
-                            icon={<Trash2 size={14} />}
-                            label="Delete"
-                            onClick={() => setDeleteTarget(user)}
-                            color="red"
-                          />
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </SectionCard>
       </div>
 
-      {/* Modals */}
+      {/* ── Modals outside the transformed div ── */}
       {addModal && (
-        <UserFormModal
-          user={null}
-          onSave={handleAdd}
-          onClose={() => setAddModal(false)}
-        />
+        <UserFormModal user={null} onSave={handleAdd} onClose={() => setAddModal(false)} />
       )}
       {editTarget && (
-        <UserFormModal
-          user={editTarget}
-          onSave={handleEdit}
-          onClose={() => setEditTarget(null)}
-        />
+        <UserFormModal user={editTarget} onSave={handleEdit} onClose={() => setEditTarget(null)} />
       )}
       {resetTarget && (
-        <ResetPasswordModal
-          user={resetTarget}
-          onClose={() => setResetTarget(null)}
-        />
+        <ResetPasswordModal user={resetTarget} onClose={() => setResetTarget(null)} />
       )}
       {deleteTarget && (
-        <DeleteConfirmModal
-          user={deleteTarget}
-          onConfirm={handleDelete}
-          onClose={() => setDeleteTarget(null)}
-        />
+        <DeleteUserModal user={deleteTarget} onConfirm={handleDelete} onClose={() => setDeleteTarget(null)} />
       )}
     </div>
-  );
-}
-
-// ── Action button helper ──────────────────────────────────────
-const ACTION_COLORS = {
-  blue:   "text-blue-400 hover:text-blue-600 hover:bg-blue-50",
-  yellow: "text-yellow-400 hover:text-yellow-600 hover:bg-yellow-50",
-  orange: "text-orange-400 hover:text-orange-600 hover:bg-orange-50",
-  green:  "text-green-400 hover:text-green-600 hover:bg-green-50",
-  red:    "text-red-400 hover:text-red-600 hover:bg-red-50",
-};
-
-function ActionButton({ icon, label, onClick, color }) {
-  return (
-    <button
-      onClick={onClick}
-      title={label}
-      className={clsx(
-        "p-1.5 rounded-lg transition-colors",
-        ACTION_COLORS[color]
-      )}
-    >
-      {icon}
-    </button>
   );
 }

@@ -2,11 +2,10 @@ const express = require("express");
 const router  = express.Router();
 const pool    = require("../config/db");
 
-// ── Helper: get full project object ──────────────────────────
 async function getProjectById(id) {
   const [rows] = await pool.query(
     `SELECT
-       p.id, p.title, p.description, p.createdAt,
+       p.id, p.title, p.description, p.clientName, p.targetEndDate, p.createdAt,
        p.pmId, u.name AS pmName, u.username AS pmUsername
      FROM projects p
      LEFT JOIN users u ON p.pmId = u.id
@@ -17,8 +16,6 @@ async function getProjectById(id) {
 }
 
 // ── GET /api/projects ─────────────────────────────────────────
-// Admin — all projects
-// PM    — only their own projects (pmId = userId from header)
 router.get("/", async (req, res) => {
   const userId = req.headers["x-user-id"] ? Number(req.headers["x-user-id"]) : null;
   const role   = req.headers["x-user-role"] ?? null;
@@ -32,7 +29,7 @@ router.get("/", async (req, res) => {
 
     const [rows] = await pool.query(
       `SELECT
-         p.id, p.title, p.description, p.createdAt,
+         p.id, p.title, p.description, p.clientName, p.targetEndDate, p.createdAt,
          p.pmId, u.name AS pmName, u.username AS pmUsername,
          COUNT(t.id) AS taskCount
        FROM projects p
@@ -51,17 +48,16 @@ router.get("/", async (req, res) => {
 });
 
 // ── POST /api/projects ────────────────────────────────────────
-// Admin only — create a new project.
 router.post("/", async (req, res) => {
-  const { title, description, pmId } = req.body;
+  const { title, description, pmId, clientName, targetEndDate } = req.body;
 
   if (!title?.trim())
     return res.status(400).json({ message: "Title is required" });
 
   try {
     const [result] = await pool.query(
-      "INSERT INTO projects (title, description, pmId) VALUES (?, ?, ?)",
-      [title.trim(), description ?? null, pmId ?? null]
+      "INSERT INTO projects (title, description, pmId, clientName, targetEndDate) VALUES (?, ?, ?, ?, ?)",
+      [title.trim(), description ?? null, pmId ?? null, clientName ?? null, targetEndDate ?? null]
     );
     const project = await getProjectById(result.insertId);
     res.status(201).json(project);
@@ -74,18 +70,17 @@ router.post("/", async (req, res) => {
 });
 
 // ── PUT /api/projects/:id ─────────────────────────────────────
-// Admin only — update title, description, pmId.
 router.put("/:id", async (req, res) => {
-  const { id }                      = req.params;
-  const { title, description, pmId } = req.body;
+  const { id } = req.params;
+  const { title, description, pmId, clientName, targetEndDate } = req.body;
 
   if (!title?.trim())
     return res.status(400).json({ message: "Title is required" });
 
   try {
     await pool.query(
-      "UPDATE projects SET title = ?, description = ?, pmId = ? WHERE id = ?",
-      [title.trim(), description ?? null, pmId ?? null, id]
+      "UPDATE projects SET title = ?, description = ?, pmId = ?, clientName = ?, targetEndDate = ? WHERE id = ?",
+      [title.trim(), description ?? null, pmId ?? null, clientName ?? null, targetEndDate ?? null, id]
     );
     const project = await getProjectById(id);
     if (!project)
@@ -100,8 +95,6 @@ router.put("/:id", async (req, res) => {
 });
 
 // ── DELETE /api/projects/:id ──────────────────────────────────
-// Admin only — delete a project.
-// Tasks are NOT deleted — their projectId is set to NULL.
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
   try {

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Apr 24, 2026 at 05:02 AM
+-- Generation Time: Apr 24, 2026 at 12:33 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -137,7 +137,48 @@ INSERT INTO `activity_logs` (`id`, `taskId`, `userId`, `action`, `createdAt`) VA
 (95, 2, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:59:28'),
 (96, 2, 7, 'Task details updated', '2026-04-24 10:59:38'),
 (97, 7, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"QA Execution\"', '2026-04-24 11:02:08'),
-(98, 7, 1, 'Phase changed from \"QA Execution\" to \"To Do (Ready for Dev)\"', '2026-04-24 11:02:11');
+(98, 7, 1, 'Phase changed from \"QA Execution\" to \"To Do (Ready for Dev)\"', '2026-04-24 11:02:11'),
+(99, 7, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"QA Execution\"', '2026-04-24 11:08:05'),
+(100, 7, 1, 'Phase changed from \"QA Execution\" to \"To Do (Ready for Dev)\"', '2026-04-24 11:08:24'),
+(101, 1, 1, 'QA assignee changed from \"Unassigned\" to \"Dana Cruz\"', '2026-04-24 11:10:14'),
+(102, 8, 1, 'QA assignee changed from \"Unassigned\" to \"Qa 2\"', '2026-04-24 11:17:46'),
+(103, 7, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"QA Execution\"', '2026-04-24 11:26:01'),
+(104, 7, 1, 'Phase changed from \"QA Execution\" to \"To Do (Ready for Dev)\"', '2026-04-24 11:26:07'),
+(105, 8, 8, 'Phase changed from \"Client Review - UAT\" to \"QA Execution\"', '2026-04-24 11:26:17'),
+(106, 8, 8, 'Phase changed from \"QA Execution\" to \"Client Review - UAT\"', '2026-04-24 11:26:25'),
+(107, 8, 8, 'Phase changed from \"Client Review - UAT\" to \"QA Execution\"', '2026-04-24 11:26:28'),
+(108, 6, 3, 'Phase changed from \"In Progress\" to \"To Do (Ready for Dev)\"', '2026-04-24 11:27:44'),
+(109, 6, 3, 'Phase changed from \"To Do (Ready for Dev)\" to \"Backlog (Requirements)\"', '2026-04-24 11:27:48'),
+(110, 7, 1, 'QA assignee changed from \"Unassigned\" to \"Qa 2\"', '2026-04-24 11:31:03'),
+(111, 6, 1, 'Phase changed from \"Backlog (Requirements)\" to \"Client Review - UAT\"', '2026-04-24 11:32:04'),
+(112, 6, 1, 'QA assignee changed from \"Unassigned\" to \"Qa 2\"', '2026-04-24 11:32:17'),
+(113, 7, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"For Review (Dev Done)\"', '2026-04-24 15:19:20'),
+(114, 7, 1, 'Phase changed from \"For Review (Dev Done)\" to \"In Progress\"', '2026-04-24 15:19:29'),
+(115, 1, 1, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 16:08:54'),
+(116, 1, 1, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 16:09:01'),
+(117, 7, 1, 'Phase changed from \"In Progress\" to \"Deployed (Go-Live)\"', '2026-04-24 17:15:32'),
+(118, 7, 1, 'Phase changed from \"Deployed (Go-Live)\" to \"In Progress\"', '2026-04-24 17:15:34'),
+(119, 9, 1, 'Task created', '2026-04-24 17:16:23'),
+(120, 9, 1, 'Phase changed from \"Backlog (Requirements)\" to \"QA Execution\"', '2026-04-24 17:16:28'),
+(121, 9, 1, 'Phase changed from \"QA Execution\" to \"Backlog (Requirements)\"', '2026-04-24 17:16:31'),
+(122, 9, 1, 'Phase changed from \"Backlog (Requirements)\" to \"QA Execution\"', '2026-04-24 17:16:37'),
+(123, 9, 1, 'Phase changed from \"QA Execution\" to \"Backlog (Requirements)\"', '2026-04-24 17:16:39'),
+(124, 1, 1, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 17:28:57'),
+(125, 1, 1, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 17:28:58'),
+(126, 2, 1, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 17:29:07'),
+(127, 1, 1, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 17:29:08'),
+(128, 1, 1, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 17:29:11'),
+(129, 1, 1, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 17:29:12'),
+(130, 2, 1, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 17:29:14'),
+(131, 1, 1, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 17:29:17'),
+(132, 2, 1, 'Phase changed from \"In Progress\" to \"To Do (Ready for Dev)\"', '2026-04-24 17:30:42'),
+(133, 2, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"In Progress\"', '2026-04-24 17:30:43'),
+(134, 2, 1, 'Phase changed from \"In Progress\" to \"Backlog (Requirements)\"', '2026-04-24 17:30:44'),
+(135, 2, 1, 'Phase changed from \"Backlog (Requirements)\" to \"In Progress\"', '2026-04-24 17:30:46'),
+(136, 1, 1, 'Phase changed from \"QA Execution\" to \"To Do (Ready for Dev)\"', '2026-04-24 17:30:55'),
+(137, 1, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"QA Execution\"', '2026-04-24 17:30:58'),
+(138, 1, 1, 'Phase changed from \"QA Execution\" to \"To Do (Ready for Dev)\"', '2026-04-24 18:21:01'),
+(139, 1, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"QA Execution\"', '2026-04-24 18:21:08');
 
 -- --------------------------------------------------------
 
@@ -202,6 +243,8 @@ CREATE TABLE `projects` (
   `id` int(11) NOT NULL,
   `title` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
+  `clientName` varchar(255) DEFAULT NULL,
+  `targetEndDate` date DEFAULT NULL,
   `pmId` int(11) DEFAULT NULL,
   `createdAt` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
@@ -210,9 +253,10 @@ CREATE TABLE `projects` (
 -- Dumping data for table `projects`
 --
 
-INSERT INTO `projects` (`id`, `title`, `description`, `pmId`, `createdAt`) VALUES
-(1, 'QTask Development', 'Default project for existing tasks', 7, '2026-04-19 11:53:14'),
-(2, 'Test Project 1', 'test data to simulate the separation of workloads', 6, '2026-04-19 12:10:09');
+INSERT INTO `projects` (`id`, `title`, `description`, `clientName`, `targetEndDate`, `pmId`, `createdAt`) VALUES
+(1, 'QTask Development', 'Default project for existing tasks', 'Sikrit', '2026-04-30', 7, '2026-04-19 11:53:14'),
+(2, 'Test Project 1', 'test data to simulate the separation of workloads', 'Atho pooo', '2026-05-01', 6, '2026-04-19 12:10:09'),
+(3, 'prajekk', 'brip diskripsyun', 'canzon qt', '2026-05-29', 6, '2026-04-24 15:36:03');
 
 -- --------------------------------------------------------
 
@@ -231,7 +275,7 @@ CREATE TABLE `severities` (
 --
 
 INSERT INTO `severities` (`id`, `label`, `sortOrder`) VALUES
-(1, '1 - Critical / Showstopper', 1),
+(1, '1 - Critical', 1),
 (2, '2 - High', 2),
 (3, '3 - Medium', 3),
 (4, '4 - Low', 4),
@@ -284,9 +328,9 @@ CREATE TABLE `subtasks` (
 --
 
 INSERT INTO `subtasks` (`id`, `taskId`, `title`, `isDone`) VALUES
-(12, 7, 'subtask 1', 0),
-(22, 8, '1', 0),
-(23, 8, '2', 0);
+(46, 8, '1', 0),
+(47, 8, '2', 0),
+(48, 7, 'subtask 1', 1);
 
 -- --------------------------------------------------------
 
@@ -316,14 +360,15 @@ CREATE TABLE `tasks` (
 --
 
 INSERT INTO `tasks` (`id`, `projectId`, `title`, `description`, `statusId`, `phaseId`, `severityId`, `assigneeId`, `qaAssigneeId`, `targetDate`, `actualEndDate`, `progress`, `createdAt`, `updatedAt`) VALUES
-(1, 1, 'Design login page', 'Create Figma mockup and implement HTML/CSS.', 1, 3, 2, 3, NULL, '2025-04-10', NULL, 0, '2026-04-18 14:45:08', '2026-04-24 10:51:21'),
-(2, 1, 'Write API docs', 'Document all Express routes via Postman.', 1, 6, 4, 5, 4, '2025-04-19', NULL, 0, '2026-04-18 14:45:08', '2026-04-24 10:59:38'),
-(3, 1, 'Build dashboard UI', 'Implement analytics dashboard with charts.', 2, 6, 2, 2, 4, '2025-04-14', NULL, 55, '2026-04-18 14:45:08', '2026-04-24 10:59:21'),
+(1, 1, 'Design login page', 'Create Figma mockup and implement HTML/CSS.', 1, 6, 2, 3, 4, '2025-04-09', NULL, 0, '2026-04-18 14:45:08', '2026-04-24 18:21:08'),
+(2, 1, 'Write API docs', 'Document all Express routes via Postman.', 1, 3, 4, 5, 4, '2025-04-19', NULL, 0, '2026-04-18 14:45:08', '2026-04-24 17:30:46'),
+(3, 1, 'Build dashboard UI', 'Implement analytics dashboard with charts.', 2, 6, 2, 2, 4, '2025-04-14', NULL, 55, '2026-04-18 14:45:08', '2026-04-24 11:19:07'),
 (4, 1, 'Auth endpoints', 'Express JWT auth with bcrypt hashing.', 6, 7, 1, 4, 4, '2025-04-09', '2026-04-18', 100, '2026-04-18 14:45:08', '2026-04-24 10:58:15'),
 (5, 1, 'Project repo setup', 'Initialise GitHub repo and branch rules.', 8, 7, 3, 2, 4, '2025-03-31', NULL, 100, '2026-04-18 14:45:08', '2026-04-24 10:49:58'),
-(6, 1, 'Kanban Frontend', 'test data no. 1', 1, 3, 2, 3, NULL, '2026-04-22', NULL, 0, '2026-04-19 11:29:17', '2026-04-19 12:47:01'),
-(7, 2, 'Backshot ugh', 'mwehehe', 1, 2, 2, 6, NULL, '2026-04-29', NULL, 0, '2026-04-22 20:32:28', '2026-04-24 11:02:11'),
-(8, 2, 'blow work', 'dipindi', 1, 2, 3, 2, NULL, '2026-04-23', NULL, 0, '2026-04-22 20:34:42', '2026-04-22 20:35:44');
+(6, 1, 'Kanban Frontend', 'test data no. 1', 1, 5, 2, 3, 8, '2026-04-21', NULL, 0, '2026-04-19 11:29:17', '2026-04-24 11:32:17'),
+(7, 2, 'Backshot ugh', 'mwehehe', 1, 3, 2, 6, 8, '2026-04-28', NULL, 100, '2026-04-22 20:32:28', '2026-04-24 17:15:34'),
+(8, 2, 'blow work', 'dipindi', 1, 6, 3, 2, 8, '2026-04-22', NULL, 0, '2026-04-22 20:34:42', '2026-04-24 11:26:55'),
+(9, 2, 'pouble denetration', NULL, 1, 1, 3, 2, NULL, '2026-04-27', NULL, 0, '2026-04-24 17:16:23', '2026-04-24 17:16:39');
 
 -- --------------------------------------------------------
 
@@ -363,11 +408,12 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `name`, `username`, `password`, `role`, `isActive`) VALUES
 (1, 'Admin User', 'admin', '$2b$10$YuJ6Or8HNFOKs3w3elGep.4JPfegjkjPzEogdb86q.fz.z7hjilOS', 'Admin', 1),
 (2, 'Carlo Reyes', 'carlo', '$2b$10$YuJ6Or8HNFOKs3w3elGep.4JPfegjkjPzEogdb86q.fz.z7hjilOS', 'Developer', 1),
-(3, 'Ana Santos', 'ana', '$2b$10$YuJ6Or8HNFOKs3w3elGep.4JPfegjkjPzEogdb86q.fz.z7hjilOS', 'Developer', 1),
+(3, 'Ana Santos', 'ana', '$2b$10$wcAuxMTpcRCNZaISx.oP2eV1Km3HT2nBNUw7QOjLcOzXtr8rQgA9G', 'Developer', 1),
 (4, 'Dana Cruz', 'dana', '$2b$10$YuJ6Or8HNFOKs3w3elGep.4JPfegjkjPzEogdb86q.fz.z7hjilOS', 'QA', 1),
 (5, 'Ben Torres', 'ben', '$2b$10$YuJ6Or8HNFOKs3w3elGep.4JPfegjkjPzEogdb86q.fz.z7hjilOS', 'Developer', 1),
 (6, 'Maria Lopez', 'maria', '$2b$10$YuJ6Or8HNFOKs3w3elGep.4JPfegjkjPzEogdb86q.fz.z7hjilOS', 'ProjectManager', 1),
-(7, 'Mark Yyu', 'markyyu', '$2b$10$bf2rKJo.iivVeXrMRo2gKu1SHI71ZL.Hf4n1M1xRnqPR6FcXdpjoO', 'ProjectManager', 1);
+(7, 'Mark Yyu', 'markyyu', '$2b$10$bf2rKJo.iivVeXrMRo2gKu1SHI71ZL.Hf4n1M1xRnqPR6FcXdpjoO', 'ProjectManager', 1),
+(8, 'Qa 222', 'qa2', '$2b$10$Vl9kgVuc8G7MYgSkQwYXieZHuDy2nVJZmtKVOc.Weev7QVmsZJzei', 'QA', 1);
 
 --
 -- Indexes for dumped tables
@@ -457,7 +503,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=99;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=140;
 
 --
 -- AUTO_INCREMENT for table `assessments`
@@ -469,13 +515,13 @@ ALTER TABLE `assessments`
 -- AUTO_INCREMENT for table `phases`
 --
 ALTER TABLE `phases`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `projects`
 --
 ALTER TABLE `projects`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `severities`
@@ -493,13 +539,13 @@ ALTER TABLE `statuses`
 -- AUTO_INCREMENT for table `subtasks`
 --
 ALTER TABLE `subtasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
 
 --
 -- AUTO_INCREMENT for table `tasks`
 --
 ALTER TABLE `tasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `task_attachments`
@@ -511,7 +557,7 @@ ALTER TABLE `task_attachments`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Constraints for dumped tables

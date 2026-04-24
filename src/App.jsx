@@ -1,112 +1,177 @@
 import { useState, useCallback, useEffect } from "react";
+import { ArrowLeft } from "lucide-react";
 
-import KanbanBoard from "./components/board/KanbanBoard";
-import DoneModal from "./components/modals/DoneModal";
-import AddTaskModal from "./components/modals/AddTaskModal";
-import AddColumnModal from "./components/modals/AddColumnModal";
+import KanbanBoard     from "./components/board/KanbanBoard";
+import DoneModal       from "./components/modals/DoneModal";
+import AddTaskModal    from "./components/modals/AddTaskModal";
+import AddColumnModal  from "./components/modals/AddColumnModal";
 import TaskDetailModal from "./components/modals/TaskDetailModal";
-import LoginPage from "./components/auth/LoginPage";
-import Sidebar from "./components/layout/Sidebar";
+import LoginPage       from "./components/auth/LoginPage";
+import Sidebar         from "./components/layout/Sidebar";
 import ActivityLogPage from "./components/pages/ActivityLogPage";
-import AllTasksPage from "./components/pages/AllTasksPage";
+import AllTasksPage    from "./components/pages/AllTasksPage";
 import UserManagementPage from "./components/pages/UserManagementPage";
-import ProjectsPage from "./components/pages/ProjectsPage";
-import PhasesPage from "./components/pages/PhasesPage";
+import ProjectsPage    from "./components/pages/ProjectsPage";
+import PhasesPage      from "./components/pages/PhasesPage";
+import AnalyticsPage   from "./components/pages/AnalyticsPage";
 
-import { useAuth } from "./context/useAuth";
+import { useAuth }        from "./context/useAuth";
 import { getDefaultPage } from "./config/navigation";
 
 import {
-  fetchPhases,
-  fetchStatuses,
-  fetchSeverities,
-  fetchTasks,
-  fetchUsers,
-  fetchProjects,
-  createPhase,
-  moveTask,
-  createTask,
-  updateTask,
-  deleteTask,
-  updateSubtasks,
+  fetchPhases, fetchStatuses, fetchSeverities, fetchTasks,
+  fetchUsers, fetchProjects, createPhase, moveTask, createTask,
+  updateTask, deleteTask, updateSubtasks,
 } from "./services/api";
 
-// ── Role → phase grouping (null = all phases) ─────────────────
+// ── Helpers ───────────────────────────────────────────────────
 function getGrouping(role) {
   if (role === "Developer") return "dev";
-  if (role === "QA") return "qa";
+  if (role === "QA")        return "qa";
   return null;
 }
 
-// ── Role → is PM-level (sees both boards) ─────────────────────
 function isPMRole(role) {
   return role === "ProjectManager" || role === "Admin";
 }
 
-// ─────────────────────────────────────────────────────────────
+// ── Project card ──────────────────────────────────────────────
+function KanbanProjectCard({ project, onClick }) {
+  return (
+    <div
+      onClick={onClick}
+      className="rounded-xl bg-white cursor-pointer transition-all duration-200"
+      style={{ border: "1px solid #e2e8f0", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif" }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(30,64,175,0.1)"; e.currentTarget.style.borderColor = "#bfdbfe"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"; e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.transform = "translateY(0)"; }}
+    >
+      <div className="px-5 py-4 border-b border-slate-100 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-black text-slate-800 leading-snug truncate">{project.title}</p>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5">{project.clientName || "—"}</p>
+        </div>
+        {project.actualEndDate || project.status === "completed" ? (
+          <span className="shrink-0 text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-full" style={{ background: "#ecfdf5", color: "#059669" }}>Completed</span>
+        ) : (
+          <span className="shrink-0 text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-full" style={{ background: "#eff6ff", color: "#1d4ed8" }}>Ongoing</span>
+        )}
+      </div>
+      <div className="px-5 py-4 flex items-center justify-between">
+        <div>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">PM</p>
+          <p className="text-[11px] font-semibold text-slate-600 mt-0.5">{project.pmName || "—"}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Target</p>
+          <p className="text-[11px] font-semibold text-slate-600 mt-0.5">
+            {project.targetEndDate
+              ? new Date(project.targetEndDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+              : "—"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Project list view ─────────────────────────────────────────
+function KanbanProjectListView({ projects, onSelect, pageTitle, pageSubtitle }) {
+  const ongoing   = projects.filter((p) => !p.actualEndDate && p.status !== "completed");
+  const completed = projects.filter((p) => !!p.actualEndDate || p.status === "completed");
+
+  return (
+    <div className="space-y-8 pb-10" style={{ fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif" }}>
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{pageSubtitle}</p>
+        <h1 className="text-2xl font-black text-slate-800 leading-none">{pageTitle}</h1>
+      </div>
+
+      {ongoing.length > 0 && (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ongoing</span>
+            <span className="text-[9px] font-bold rounded-full px-2 py-0.5" style={{ background: "#eff6ff", color: "#1d4ed8" }}>{ongoing.length}</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {ongoing.map((p) => <KanbanProjectCard key={p.id} project={p} onClick={() => onSelect(p.id)} />)}
+          </div>
+        </div>
+      )}
+
+      {completed.length > 0 && (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Completed</span>
+            <span className="text-[9px] font-bold rounded-full px-2 py-0.5" style={{ background: "#ecfdf5", color: "#059669" }}>{completed.length}</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {completed.map((p) => <KanbanProjectCard key={p.id} project={p} onClick={() => onSelect(p.id)} />)}
+          </div>
+        </div>
+      )}
+
+      {projects.length === 0 && (
+        <div className="flex items-center justify-center h-48 rounded-xl text-slate-400 text-sm" style={{ border: "2px dashed #e2e8f0" }}>
+          No projects found.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── App gate ──────────────────────────────────────────────────
 export default function App() {
   const { currentUser, logout } = useAuth();
   if (!currentUser) return <LoginPage />;
   return <Board currentUser={currentUser} logout={logout} />;
 }
 
-// ─────────────────────────────────────────────────────────────
+// ── Board ─────────────────────────────────────────────────────
 function Board({ currentUser, logout }) {
-  const [activePage, setActivePage] = useState(() =>
-    getDefaultPage(currentUser.role),
-  );
-  const [projects, setProjects] = useState([]);
+  const [activePage,      setActivePage]      = useState(() => getDefaultPage(currentUser.role));
+  const [projects,        setProjects]        = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
-  const [devPhases, setDevPhases] = useState([]);
-  const [qaPhases, setQaPhases] = useState([]);
-  const [statuses, setStatuses] = useState([]);
-  const [severities, setSeverities] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [renderKey, setRenderKey] = useState(0);
-  const [doneModal, setDoneModal] = useState(null);
-  const [showAddTask, setShowAddTask] = useState(false);
-  const [showAddColumn, setShowAddColumn] = useState(false);
-  const [detailTask, setDetailTask] = useState(null);
+  const [devPhases,       setDevPhases]       = useState([]);
+  const [qaPhases,        setQaPhases]        = useState([]);
+  const [statuses,        setStatuses]        = useState([]);
+  const [severities,      setSeverities]      = useState([]);
+  const [tasks,           setTasks]           = useState([]);
+  const [users,           setUsers]           = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [error,           setError]           = useState(null);
+  const [renderKey,       setRenderKey]       = useState(0);
+  const [doneModal,       setDoneModal]       = useState(null);
+  const [showAddTask,     setShowAddTask]     = useState(false);
+  const [showAddColumn,   setShowAddColumn]   = useState(false);
+  const [detailTask,      setDetailTask]      = useState(null);
+  const [analyticsProjectId, setAnalyticsProjectId] = useState(null);
 
-  const isPM = isPMRole(currentUser.role);
-  const grouping = getGrouping(currentUser.role);
+  const isPM      = isPMRole(currentUser.role);
+  const grouping  = getGrouping(currentUser.role);
   const allPhases = [...devPhases, ...qaPhases];
 
-  // ── Load projects + static data on mount ──────────────────
+  // ── Load static data on mount ─────────────────────────────
   useEffect(() => {
     async function loadStatic() {
       try {
         setLoading(true);
         const [
-          projectData,
-          devPhaseData,
-          qaPhaseData,
-          statusData,
-          severityData,
-          userData,
+          projectData, devPhaseData, qaPhaseData,
+          statusData, severityData, userData,
         ] = await Promise.all([
           isPM ? fetchProjects() : Promise.resolve([]),
           isPM ? fetchPhases("dev") : fetchPhases(grouping),
-          isPM ? fetchPhases("qa") : Promise.resolve([]),
+          isPM ? fetchPhases("qa")  : Promise.resolve([]),
           fetchStatuses(),
           fetchSeverities(),
           fetchUsers(),
         ]);
-
         setProjects(projectData);
         setDevPhases(devPhaseData);
         setQaPhases(qaPhaseData);
         setStatuses(statusData);
         setSeverities(severityData);
         setUsers(userData);
-
-        // Set first project as active by default
-        if (projectData.length > 0) {
-          setActiveProjectId(projectData[0].id);
-        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -116,19 +181,19 @@ function Board({ currentUser, logout }) {
     loadStatic();
   }, [isPM, grouping]);
 
-  // ── Load tasks whenever activeProjectId changes ────────────
+  // ── Load tasks when activeProjectId changes ───────────────
+  // Only reloads when a valid projectId is set — does NOT clear
+  // tasks on navigation so detailTask modal stays open
   useEffect(() => {
+    if (!activeProjectId && isPM) return;
     async function loadTasks() {
       try {
-        const isQA = currentUser.role === "QA";
+        const isQA  = currentUser.role === "QA";
         const isDev = currentUser.role === "Developer";
-
-        const data = await fetchTasks(
-          isPM ? activeProjectId : null,
-          // QA sees only tasks assigned to them as QA assignee
-          // Dev sees only tasks assigned to them as dev assignee
-          isQA || isDev ? currentUser.id : null,
-          isQA ? "qa" : isDev ? "dev" : null,
+        const data  = await fetchTasks(
+          isPM  ? activeProjectId : null,
+          (isQA || isDev) ? currentUser.id : null,
+          isQA  ? "qa" : isDev ? "dev" : null,
         );
         setTasks(data);
       } catch (err) {
@@ -138,139 +203,105 @@ function Board({ currentUser, logout }) {
     loadTasks();
   }, [activeProjectId, isPM, currentUser]);
 
-  // ── Project switch ─────────────────────────────────────────
-  const handleProjectChange = useCallback((projectId) => {
-    setActiveProjectId(projectId);
-    setRenderKey((k) => k + 1);
-  }, []);
-
-  // ── Derived: group tasks by phaseId ───────────────────────
+  // ── Derived ───────────────────────────────────────────────
   const tasksByPhase = allPhases.reduce((acc, p) => {
     acc[p.id] = tasks.filter((t) => t.phaseId === p.id);
     return acc;
   }, {});
 
-  const findTask = useCallback(
-    (taskId) => tasks.find((t) => t.id === taskId),
-    [tasks],
-  );
+  const findTask      = useCallback((taskId) => tasks.find((t) => t.id === taskId), [tasks]);
+  const activeProject = projects.find((p) => p.id === activeProjectId);
 
-  // ── Drag end ──────────────────────────────────────────────
-  const handleDragEnd = useCallback(
-    async (fromPhaseId, toPhaseId, taskId) => {
-      if (fromPhaseId === toPhaseId) return;
-      const targetPhase = allPhases.find((p) => p.id === toPhaseId);
-      if (targetPhase?.isFinal) {
-        setDoneModal({ taskId, targetPhaseId: toPhaseId });
-      } else {
-        try {
-          setTasks((prev) =>
-            prev.map((t) =>
-              t.id === taskId
-                ? {
-                    ...t,
-                    phaseId: toPhaseId,
-                    phaseLabel: targetPhase?.label,
-                    phaseGrouping: targetPhase?.grouping,
-                  }
-                : t,
-            ),
-          );
-          setRenderKey((k) => k + 1);
-          await moveTask(taskId, toPhaseId);
-        } catch (err) {
-          console.error("Move failed:", err.message);
-          setTasks((prev) =>
-            prev.map((t) =>
-              t.id === taskId ? { ...t, phaseId: fromPhaseId } : t,
-            ),
-          );
-          setRenderKey((k) => k + 1);
-          alert(`Move failed: ${err.message}`);
-        }
-      }
-    },
-    [allPhases],
-  );
+  // ── Handlers ──────────────────────────────────────────────
+  const handleProjectSelect = useCallback((projectId) => {
+    setActiveProjectId(projectId);
+    setRenderKey((k) => k + 1);
+  }, []);
 
-  // ── Done modal confirm ────────────────────────────────────
-  const handleDoneConfirm = useCallback(
-    async (actualEndDate) => {
-      if (!doneModal) return;
-      const { taskId, targetPhaseId } = doneModal;
-      const targetPhase = allPhases.find((p) => p.id === targetPhaseId);
+  const handleProjectBack = useCallback(() => {
+    setActiveProjectId(null);
+    setTasks([]);
+  }, []);
+
+  const handleDragEnd = useCallback(async (fromPhaseId, toPhaseId, taskId) => {
+    if (fromPhaseId === toPhaseId) return;
+    const targetPhase = allPhases.find((p) => p.id === toPhaseId);
+    if (targetPhase?.isFinal) {
+      setDoneModal({ taskId, targetPhaseId: toPhaseId });
+    } else {
       try {
         setTasks((prev) =>
           prev.map((t) =>
             t.id === taskId
-              ? {
-                  ...t,
-                  phaseId: targetPhaseId,
-                  phaseLabel: targetPhase?.label,
-                  actualEndDate,
-                  progress: 100,
-                }
-              : t,
-          ),
+              ? { ...t, phaseId: toPhaseId, phaseLabel: targetPhase?.label, phaseGrouping: targetPhase?.grouping }
+              : t
+          )
         );
         setRenderKey((k) => k + 1);
-        const updated = await moveTask(taskId, targetPhaseId, actualEndDate);
+        const updated = await moveTask(taskId, toPhaseId);
         setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
       } catch (err) {
-        console.error("Done confirm failed:", err.message);
-        alert(`Failed to mark done: ${err.message}`);
-      } finally {
-        setDoneModal(null);
-      }
-    },
-    [doneModal, allPhases],
-  );
-
-  // ── Add task ──────────────────────────────────────────────
-  const handleAddTask = useCallback(
-    async (formData) => {
-      try {
-        const newTask = await createTask({
-          ...formData,
-          projectId: activeProjectId,
-        });
-        setTasks((prev) => [newTask, ...prev]);
-        setShowAddTask(false);
+        console.error("Move failed:", err.message);
+        setTasks((prev) =>
+          prev.map((t) => (t.id === taskId ? { ...t, phaseId: fromPhaseId } : t))
+        );
         setRenderKey((k) => k + 1);
-      } catch (err) {
-        console.error("Create task failed:", err.message);
-        alert(`Failed to create task: ${err.message}`);
+        alert(`Move failed: ${err.message}`);
       }
-    },
-    [activeProjectId],
-  );
+    }
+  }, [allPhases]);
 
-  // ── Add column ────────────────────────────────────────────
-  const handleAddColumn = useCallback(
-    async ({ label, isFinal, isDefault }) => {
-      const maxOrder = allPhases.reduce(
-        (max, p) => Math.max(max, p.sortOrder ?? 0),
-        0,
+  const handleDoneConfirm = useCallback(async (actualEndDate) => {
+    if (!doneModal) return;
+    const { taskId, targetPhaseId } = doneModal;
+    const targetPhase = allPhases.find((p) => p.id === targetPhaseId);
+    try {
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? { ...t, phaseId: targetPhaseId, phaseLabel: targetPhase?.label, actualEndDate, progress: 100 }
+            : t
+        )
       );
-      const saved = await createPhase({
-        label,
-        isFinal: isFinal ? 1 : 0,
-        isDefault: isDefault ? 1 : 0,
-        sortOrder: maxOrder + 1,
-      });
-      if (saved.grouping === "dev") setDevPhases((prev) => [...prev, saved]);
-      else setQaPhases((prev) => [...prev, saved]);
-      setShowAddColumn(false);
       setRenderKey((k) => k + 1);
-    },
-    [allPhases],
-  );
+      const updated = await moveTask(taskId, targetPhaseId, actualEndDate);
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+    } catch (err) {
+      console.error("Done confirm failed:", err.message);
+      alert(`Failed to mark done: ${err.message}`);
+    } finally {
+      setDoneModal(null);
+    }
+  }, [doneModal, allPhases]);
 
-  // ── Edit task ─────────────────────────────────────────────
+  const handleAddTask = useCallback(async (formData) => {
+    try {
+      const newTask = await createTask({ ...formData, projectId: activeProjectId });
+      setTasks((prev) => [newTask, ...prev]);
+      setShowAddTask(false);
+      setRenderKey((k) => k + 1);
+    } catch (err) {
+      console.error("Create task failed:", err.message);
+      alert(`Failed to create task: ${err.message}`);
+    }
+  }, [activeProjectId]);
+
+  const handleAddColumn = useCallback(async ({ label, isFinal, isDefault }) => {
+    const maxOrder = allPhases.reduce((max, p) => Math.max(max, p.sortOrder ?? 0), 0);
+    const saved    = await createPhase({
+      label, isFinal: isFinal ? 1 : 0,
+      isDefault: isDefault ? 1 : 0, sortOrder: maxOrder + 1,
+    });
+    if (saved.grouping === "dev") setDevPhases((prev) => [...prev, saved]);
+    else                          setQaPhases((prev)  => [...prev, saved]);
+    setShowAddColumn(false);
+    setRenderKey((k) => k + 1);
+  }, [allPhases]);
+
   const handleEditTask = useCallback(async (taskId, payload) => {
     try {
       const updated = await updateTask(taskId, payload);
-      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+      setTasks((prev)      => prev.map((t) => (t.id === taskId ? updated : t)));
       setDetailTask((prev) => (prev?.id === taskId ? updated : prev));
     } catch (err) {
       console.error("Edit task failed:", err.message);
@@ -278,7 +309,6 @@ function Board({ currentUser, logout }) {
     }
   }, []);
 
-  // ── Delete task ───────────────────────────────────────────
   const handleDeleteTask = useCallback(async (taskId) => {
     try {
       await deleteTask(taskId);
@@ -291,12 +321,8 @@ function Board({ currentUser, logout }) {
     }
   }, []);
 
-  // ── Card click ────────────────────────────────────────────
-  const handleCardClick = useCallback((task) => {
-    setDetailTask(task);
-  }, []);
+  const handleCardClick = useCallback((task) => setDetailTask(task), []);
 
-  // ── Subtask update ────────────────────────────────────────
   const handleUpdateSubtasks = useCallback(async (taskId, newSubtasks) => {
     try {
       const updated = await updateSubtasks(taskId, newSubtasks);
@@ -307,13 +333,16 @@ function Board({ currentUser, logout }) {
   }, []);
 
   const totalTasks = tasks.length;
-  const doneTask = doneModal ? findTask(doneModal.taskId) : null;
+  const doneTask   = doneModal ? findTask(doneModal.taskId) : null;
 
   // ── Loading ───────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400 text-sm">Loading board…</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#f8fafc", fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif" }}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 animate-spin" style={{ borderColor: "#3b82f6", borderTopColor: "transparent" }} />
+          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#94a3b8" }}>Loading board…</p>
+        </div>
       </div>
     );
   }
@@ -321,20 +350,15 @@ function Board({ currentUser, logout }) {
   // ── Error ─────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-2xl shadow p-6 max-w-sm text-center space-y-3">
-          <p className="text-red-500 font-semibold">
-            Could not connect to the server
-          </p>
-          <p className="text-sm text-gray-500">{error}</p>
-          <p className="text-xs text-gray-400">
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#f8fafc", fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif" }}>
+        <div className="rounded-2xl p-6 max-w-sm w-full text-center space-y-3" style={{ background: "linear-gradient(135deg, #0f172a, #1e3a5f)", border: "1px solid #1e40af30" }}>
+          <p className="text-xs font-black uppercase tracking-widest" style={{ color: "#f87171" }}>Connection Failed</p>
+          <p className="text-sm font-medium" style={{ color: "#cbd5e1" }}>{error}</p>
+          <p className="text-xs" style={{ color: "#64748b" }}>
             Make sure the Express backend is running on{" "}
-            <code className="bg-gray-100 px-1 rounded">localhost:5000</code>
+            <code className="px-1.5 py-0.5 rounded text-xs" style={{ background: "#ffffff10", color: "#93c5fd" }}>localhost:5000</code>
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition"
-          >
+          <button onClick={() => window.location.reload()} className="mt-2 px-4 py-2 text-sm font-semibold rounded-xl" style={{ background: "linear-gradient(135deg, #1e40af, #3b82f6)", color: "#fff" }}>
             Retry
           </button>
         </div>
@@ -342,31 +366,84 @@ function Board({ currentUser, logout }) {
     );
   }
 
-  // ── Kanban board JSX (reused in multiple pages) ────────────
+  // ── Inline helpers ─────────────────────────────────────────
   const KanbanHeader = ({ title, subtitle }) => (
-    <div className="flex justify-between items-center mb-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
-        <p className="text-sm text-gray-400 mt-0.5">{subtitle}</p>
+    <div className="flex justify-between items-end mb-6">
+      <div className="flex items-center gap-4">
+        {isPM && (
+          <button
+            onClick={handleProjectBack}
+            className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-3 py-2 rounded-lg transition-all"
+            style={{ background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#e2e8f0"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "#f1f5f9"; }}
+          >
+            <ArrowLeft size={12} />
+            Back
+          </button>
+        )}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{subtitle}</p>
+          <h1 className="text-2xl font-black text-slate-800 leading-none">{title}</h1>
+          {isPM && activeProject && (
+            <p className="text-[11px] text-slate-400 font-medium mt-1">{activeProject.clientName || ""}</p>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-2">
         {isPM && (
           <button
             onClick={() => setShowAddColumn(true)}
-            className="bg-gray-700 text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition text-sm shadow"
+            className="text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+            style={{ background: "linear-gradient(135deg, #0f172a, #1e3a5f)", color: "#fff" }}
           >
             + Add phase
           </button>
         )}
         <button
           onClick={() => setShowAddTask(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition text-sm shadow"
+          className="text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+          style={{ background: "linear-gradient(135deg, #1e40af, #3b82f6)", color: "#fff" }}
         >
           + Add task
         </button>
       </div>
     </div>
   );
+
+  const SectionLabel = ({ children }) => (
+    <div className="flex items-center gap-3 mb-3">
+      <span className="text-xs font-black uppercase tracking-widest text-slate-400" style={{ letterSpacing: "0.12em" }}>
+        {children}
+      </span>
+      <div className="flex-1 h-px" style={{ background: "#e2e8f0" }} />
+    </div>
+  );
+
+  // ── PM project list gate ───────────────────────────────────
+  const isKanbanPage = ["overview", "kanban", "my-tasks", "qa-board"].includes(activePage);
+  if (isPM && isKanbanPage && !activeProjectId) {
+    const pageMeta = {
+      overview:    { title: "Overview",    subtitle: "Select a project" },
+      kanban:      { title: "Kanban Board", subtitle: "Select a project" },
+      "my-tasks":  { title: "My Tasks",    subtitle: "Select a project" },
+      "qa-board":  { title: "QA Board",    subtitle: "Select a project" },
+    };
+    const meta = pageMeta[activePage];
+    return (
+      <div className="flex h-screen overflow-hidden" style={{ background: "#f8fafc", fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif" }}>
+        <Sidebar currentUser={currentUser} activePage={activePage} onNavigate={setActivePage} onLogout={logout} />
+        <main className="flex-1 overflow-y-auto p-6">
+          <KanbanProjectListView
+            projects={projects}
+            onSelect={handleProjectSelect}
+            pageTitle={meta.title}
+            pageSubtitle={meta.subtitle}
+          />
+        </main>
+      </div>
+    );
+  }
 
   // ── Page content ──────────────────────────────────────────
   const renderPage = () => {
@@ -376,45 +453,22 @@ function Board({ currentUser, logout }) {
         return (
           <>
             <KanbanHeader
-              title={activePage === "kanban" ? "Kanban Board" : "Overview"}
+              title={activePage === "kanban" ? "Kanban Board" : activeProject?.title ?? "Overview"}
               subtitle={`${totalTasks} task${totalTasks !== 1 ? "s" : ""} across ${allPhases.length} phases`}
             />
             {isPM ? (
               <>
                 <div className="mb-8">
-                  <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                    Development
-                  </h2>
-                  <KanbanBoard
-                    columns={devPhases}
-                    tasks={tasksByPhase}
-                    renderKey={renderKey}
-                    onDragEnd={handleDragEnd}
-                    onCardClick={handleCardClick}
-                  />
+                  <SectionLabel>Development</SectionLabel>
+                  <KanbanBoard columns={devPhases} tasks={tasksByPhase} renderKey={renderKey} onDragEnd={handleDragEnd} onCardClick={handleCardClick} />
                 </div>
-                <div className="border-t border-gray-200 my-6" />
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                    QA
-                  </h2>
-                  <KanbanBoard
-                    columns={qaPhases}
-                    tasks={tasksByPhase}
-                    renderKey={renderKey}
-                    onDragEnd={handleDragEnd}
-                    onCardClick={handleCardClick}
-                  />
+                  <SectionLabel>QA</SectionLabel>
+                  <KanbanBoard columns={qaPhases} tasks={tasksByPhase} renderKey={renderKey} onDragEnd={handleDragEnd} onCardClick={handleCardClick} />
                 </div>
               </>
             ) : (
-              <KanbanBoard
-                columns={devPhases}
-                tasks={tasksByPhase}
-                renderKey={renderKey}
-                onDragEnd={handleDragEnd}
-                onCardClick={handleCardClick}
-              />
+              <KanbanBoard columns={devPhases} tasks={tasksByPhase} renderKey={renderKey} onDragEnd={handleDragEnd} onCardClick={handleCardClick} />
             )}
           </>
         );
@@ -429,7 +483,7 @@ function Board({ currentUser, logout }) {
                 Object.entries(tasksByPhase).map(([phaseId, phaseTasks]) => [
                   phaseId,
                   phaseTasks.filter((t) => t.assigneeId === currentUser.id),
-                ]),
+                ])
               )}
               renderKey={renderKey}
               onDragEnd={handleDragEnd}
@@ -478,14 +532,21 @@ function Board({ currentUser, logout }) {
       case "phases":
         return <PhasesPage />;
 
+      case "analytics":
+        return (
+          <AnalyticsPage
+            selectedId={analyticsProjectId}
+            onSelect={setAnalyticsProjectId}
+            onBack={() => setAnalyticsProjectId(null)}
+          />
+        );
+
       default:
         return (
           <div className="flex items-center justify-center h-full">
             <div className="text-center space-y-2">
-              <p className="text-gray-400 font-medium">
-                This page is under development
-              </p>
-              <p className="text-sm text-gray-300">Check back later</p>
+              <p className="text-xs font-black uppercase tracking-widest" style={{ color: "#94a3b8" }}>Under Development</p>
+              <p className="text-sm" style={{ color: "#cbd5e1" }}>Check back later</p>
             </div>
           </div>
         );
@@ -494,19 +555,19 @@ function Board({ currentUser, logout }) {
 
   // ── Render ────────────────────────────────────────────────
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ background: "#f8fafc", fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif" }}>
       <Sidebar
         currentUser={currentUser}
         activePage={activePage}
         onNavigate={setActivePage}
         onLogout={logout}
-        projects={projects}
-        activeProjectId={activeProjectId}
-        onProjectChange={handleProjectChange}
       />
 
-      <main className="flex-1 overflow-y-auto p-6">{renderPage()}</main>
+      <main className="flex-1 overflow-y-auto p-6">
+        {renderPage()}
+      </main>
 
+      {/* Modals — rendered outside renderPage so they persist across navigation */}
       {detailTask && (
         <TaskDetailModal
           task={detailTask}
@@ -514,9 +575,7 @@ function Board({ currentUser, logout }) {
           severities={severities}
           statuses={statuses}
           onUpdate={(taskId, fields) => {
-            if (fields.subtasks !== undefined) {
-              handleUpdateSubtasks(taskId, fields.subtasks);
-            }
+            if (fields.subtasks !== undefined) handleUpdateSubtasks(taskId, fields.subtasks);
           }}
           onEdit={handleEditTask}
           onDelete={handleDeleteTask}

@@ -30,11 +30,11 @@ const NAV_ITEMS = {
     { key: "kanban",          label: "Kanban Board",    icon: KanbanSquare    },
     { key: "users",           label: "User Management", icon: Users           },
     { key: "projects", label: "Projects", icon: FolderKanban },
+   { key: "analytics",       label: "Analytics",       icon: BarChart2},
     { key: "phases",          label: "Phases",          icon: Layers          }, //kinda redundant and optional
     { key: "severities",      label: "Severities",      icon: AlertOctagon    }, //kinda redundant and optional
     { key: "statuses",        label: "Statuses",        icon: CheckSquare     }, //kinda redundant and optional
     { key: "logs",            label: "Activity Logs",   icon: ActivitySquare  },
-    { key: "analytics",       label: "Analytics",       icon: BarChart2,       underDevelopment: true }, //to be filled with functions
   ],
 
   ProjectManager: [

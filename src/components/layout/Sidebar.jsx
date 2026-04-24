@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, FolderKanban, ChevronsUpDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, FolderKanban, LogOut } from "lucide-react";
 import { getNavItems } from "../../config/navigation";
 import SidebarNavItem from "./SidebarNavItem";
 
@@ -7,42 +7,45 @@ import SidebarNavItem from "./SidebarNavItem";
  * Sidebar
  *
  * Props:
- *   currentUser     — { name, role, ... }
- *   activePage      — current page key
- *   onNavigate      — called with page key when a nav item is clicked
- *   onLogout        — called when sign out is clicked
- *   projects        — array of projects available to this user
- *   activeProjectId — currently selected project id
- *   onProjectChange — called with project id when switcher changes
+ *   currentUser — { name, role, ... }
+ *   activePage  — current page key
+ *   onNavigate  — called with page key when a nav item is clicked
+ *   onLogout    — called when sign out is clicked
  */
 export default function Sidebar({
   currentUser,
   activePage,
   onNavigate,
   onLogout,
-  projects        = [],
-  activeProjectId = null,
-  onProjectChange,
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
-  const navItems      = getNavItems(currentUser.role);
-  const activeProject = projects.find((p) => p.id === activeProjectId);
+  const navItems = getNavItems(currentUser.role);
 
   return (
     <aside
       className={`
-        relative flex flex-col bg-white border-r border-gray-200
-        transition-all duration-200 ease-in-out shrink-0
+        relative flex flex-col shrink-0
+        transition-all duration-200 ease-in-out
         ${collapsed ? "w-16" : "w-60"}
       `}
+      style={{
+        background: "linear-gradient(180deg, #0f172a 0%, #1e3a5f 100%)",
+        borderRight: "1px solid #1e40af20",
+        fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif",
+      }}
     >
       {/* ── Collapse toggle ───────────────────────────────── */}
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="absolute -right-3 top-6 z-10 bg-white border border-gray-200
-                   rounded-full p-0.5 text-gray-400 hover:text-gray-600
-                   hover:border-gray-300 transition-colors shadow-sm"
+        className="absolute -right-3 top-6 z-10 rounded-full p-0.5 transition-colors shadow-md"
+        style={{
+          background: "#1e3a5f",
+          border: "1px solid #1e40af40",
+          color: "#94a3b8",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
       >
         {collapsed
           ? <ChevronRight size={14} />
@@ -52,44 +55,25 @@ export default function Sidebar({
 
       {/* ── Logo ──────────────────────────────────────────── */}
       <div className={`flex items-center gap-2.5 px-4 py-5 ${collapsed ? "justify-center" : ""}`}>
-        <FolderKanban size={22} className="text-blue-600 shrink-0" />
+        <FolderKanban size={22} className="shrink-0" style={{ color: "#3b82f6" }} />
         {!collapsed && (
-          <span className="text-base font-bold text-gray-800 truncate">QTask</span>
+          <span
+            className="text-base font-black truncate tracking-tight"
+            style={{ color: "#fff" }}
+          >
+            QTask
+          </span>
         )}
       </div>
 
-      {/* ── Project switcher ──────────────────────────────── */}
+      {/* ── Section label ─────────────────────────────────── */}
       {!collapsed && (
-        <div className="mx-3 mb-3">
-          {projects.length === 0 ? (
-            <div className="px-3 py-2 bg-gray-50 rounded-lg">
-              <span className="text-xs text-gray-400">No projects assigned</span>
-            </div>
-          ) : (
-            <div className="relative">
-              <select
-                value={activeProjectId ?? ""}
-                onChange={(e) => onProjectChange?.(Number(e.target.value))}
-                className="w-full appearance-none bg-gray-50 hover:bg-gray-100
-                           rounded-lg px-3 py-2 pr-7 text-xs font-medium
-                           text-gray-600 border-none focus:outline-none
-                           focus:ring-2 focus:ring-blue-500 cursor-pointer
-                           transition-colors truncate"
-              >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.title}
-                  </option>
-                ))}
-              </select>
-              <ChevronsUpDown
-                size={12}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2
-                           text-gray-400 pointer-events-none shrink-0"
-              />
-            </div>
-          )}
-        </div>
+        <p
+          className="px-5 pb-1.5 text-[10px] font-bold uppercase tracking-widest"
+          style={{ color: "#475569" }}
+        >
+          Navigation
+        </p>
       )}
 
       {/* ── Nav items ─────────────────────────────────────── */}
@@ -106,26 +90,45 @@ export default function Sidebar({
       </nav>
 
       {/* ── User info + sign out ───────────────────────────── */}
-      <div className={`
-        border-t border-gray-200 px-3 py-4
-        flex items-center gap-3
-        ${collapsed ? "justify-center" : ""}
-      `}>
+      <div
+        className={`
+          px-3 py-4
+          flex items-center gap-3
+          ${collapsed ? "justify-center" : ""}
+        `}
+        style={{ borderTop: "1px solid rgba(255,255,255,0.12)" }}
+      >
         {/* Avatar */}
-        <div className="shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-600
-                        flex items-center justify-center text-xs font-bold uppercase">
+        <div
+          className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold uppercase text-white"
+          style={{ background: "linear-gradient(135deg, #2563eb, #3b82f6)", boxShadow: "0 0 0 2px rgba(59,130,246,0.25)" }}
+        >
           {currentUser.name.charAt(0)}
         </div>
 
         {/* Name + role + sign out */}
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-700 truncate">{currentUser.name}</p>
-            <p className="text-xs text-gray-400 truncate">{currentUser.role}</p>
+            <p className="text-sm font-semibold truncate" style={{ color: "#f1f5f9" }}>
+              {currentUser.name}
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-wider truncate" style={{ color: "#94a3b8" }}>
+              {currentUser.role}
+            </p>
             <button
               onClick={onLogout}
-              className="text-xs text-gray-400 hover:text-red-500 transition-colors mt-0.5"
+              className="flex items-center gap-1 mt-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors rounded px-1.5 py-0.5 -ml-1.5"
+              style={{ color: "#f87171", background: "rgba(239,68,68,0.1)" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(239,68,68,0.2)";
+                e.currentTarget.style.color = "#fca5a5";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(239,68,68,0.1)";
+                e.currentTarget.style.color = "#f87171";
+              }}
             >
+              <LogOut size={10} />
               Sign out
             </button>
           </div>
