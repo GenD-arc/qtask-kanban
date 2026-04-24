@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, FolderKanban, ChevronsUpDown } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  FolderKanban,
+  ChevronsUpDown,
+} from "lucide-react";
 import { getNavItems } from "../../config/navigation";
 import SidebarNavItem from "./SidebarNavItem";
 
@@ -20,13 +25,13 @@ export default function Sidebar({
   activePage,
   onNavigate,
   onLogout,
-  projects        = [],
+  projects = [],
   activeProjectId = null,
   onProjectChange,
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
-  const navItems      = getNavItems(currentUser.role);
+  const navItems = getNavItems(currentUser.role);
   const activeProject = projects.find((p) => p.id === activeProjectId);
 
   return (
@@ -44,17 +49,18 @@ export default function Sidebar({
                    rounded-full p-0.5 text-gray-400 hover:text-gray-600
                    hover:border-gray-300 transition-colors shadow-sm"
       >
-        {collapsed
-          ? <ChevronRight size={14} />
-          : <ChevronLeft  size={14} />
-        }
+        {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
       </button>
 
       {/* ── Logo ──────────────────────────────────────────── */}
-      <div className={`flex items-center gap-2.5 px-4 py-5 ${collapsed ? "justify-center" : ""}`}>
+      <div
+        className={`flex items-center gap-2.5 px-4 py-5 ${collapsed ? "justify-center" : ""}`}
+      >
         <FolderKanban size={22} className="text-blue-600 shrink-0" />
         {!collapsed && (
-          <span className="text-base font-bold text-gray-800 truncate">QTask</span>
+          <span className="text-base font-bold text-gray-800 truncate">
+            QTask
+          </span>
         )}
       </div>
 
@@ -63,7 +69,9 @@ export default function Sidebar({
         <div className="mx-3 mb-3">
           {projects.length === 0 ? (
             <div className="px-3 py-2 bg-gray-50 rounded-lg">
-              <span className="text-xs text-gray-400">No projects assigned</span>
+              <span className="text-xs text-gray-400">
+                No projects assigned
+              </span>
             </div>
           ) : (
             <div className="relative">
@@ -106,21 +114,27 @@ export default function Sidebar({
       </nav>
 
       {/* ── User info + sign out ───────────────────────────── */}
-      <div className={`
+      <div
+        className={`
         border-t border-gray-200 px-3 py-4
         flex items-center gap-3
         ${collapsed ? "justify-center" : ""}
-      `}>
+      `}
+      >
         {/* Avatar */}
-        <div className="shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-600
-                        flex items-center justify-center text-xs font-bold uppercase">
+        <div
+          className="shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-600
+                        flex items-center justify-center text-xs font-bold uppercase"
+        >
           {currentUser.name.charAt(0)}
         </div>
 
         {/* Name + role + sign out */}
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-700 truncate">{currentUser.name}</p>
+            <p className="text-sm font-medium text-gray-700 truncate">
+              {currentUser.name}
+            </p>
             <p className="text-xs text-gray-400 truncate">{currentUser.role}</p>
             <button
               onClick={onLogout}

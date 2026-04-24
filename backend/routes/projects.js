@@ -50,6 +50,37 @@ router.get("/", async (req, res) => {
   }
 });
 
+// ── GET /api/projects/assigned ────────────────────────────────
+// Developer / QA — returns projects that have at least one task
+// assigned to the requesting user.
+router.get("/assigned", async (req, res) => {
+  const userId = req.headers["x-user-id"] ? Number(req.headers["x-user-id"]) : null;
+
+  if (!userId)
+    return res.status(400).json({ message: "User id header missing" });
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT DISTINCT
+         p.id, p.title, p.description, p.createdAt,
+         p.pmId, u.name AS pmName, u.username AS pmUsername,
+         (
+           SELECT COUNT(*) FROM tasks t2
+           WHERE t2.projectId = p.id AND t2.assigneeId = ?
+         ) AS taskCount
+       FROM projects p
+       LEFT JOIN users u ON p.pmId = u.id
+       INNER JOIN tasks t ON t.projectId = p.id AND t.assigneeId = ?
+       ORDER BY p.createdAt DESC`,
+      [userId, userId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("GET /projects/assigned error:", err);
+    res.status(500).json({ message: "Failed to fetch assigned projects" });
+  }
+});
+
 // ── POST /api/projects ────────────────────────────────────────
 // Admin only — create a new project.
 router.post("/", async (req, res) => {

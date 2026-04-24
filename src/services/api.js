@@ -46,7 +46,10 @@ export const fetchSeverities = () => request("GET", "/severities");
 export const fetchUsers = () => request("GET", "/users");
 
 // ── Projects ──────────────────────────────────────────────────
-export const fetchProjects  = ()              => request("GET",    "/projects");
+// Admin/PM: all or own projects
+export const fetchProjects         = ()            => request("GET",    "/projects");
+// Developer/QA: only projects they are assigned to via tasks
+export const fetchAssignedProjects = ()            => request("GET",    "/projects/assigned");
 export const createProject  = (payload)       => request("POST",   "/projects", payload);
 export const updateProject  = (id, payload)   => request("PUT",    `/projects/${id}`, payload);
 export const deleteProject  = (id)            => request("DELETE", `/projects/${id}`);
