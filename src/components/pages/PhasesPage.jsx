@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Pencil, Check, X, Trash2 } from "lucide-react";
 
 const FIXED_GROUPS = [
   { key: "dev", label: "Development", icon: "⚙️" },
@@ -62,7 +63,28 @@ export default function PhasesPage() {
       setPhases((prev) => prev.filter((p) => p.id !== id));
     } catch (error) {
       console.error("Error deleting phase:", error);
-      setErrMessage("Failed to delete phase. It may be in use by existing tasks.");
+      setErrMessage(
+        "Failed to delete phase. It may be in use by existing tasks.",
+      );
+      setPopUpError(true);
+    }
+  };
+
+  const handleUpdatePhase = async (id, payload) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/phases/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error("Failed to update phase");
+      const updated = await response.json();
+      setPhases((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      // Notify the rest of the app (KanbanBoard re-fetches phases on this event)
+      window.dispatchEvent(new Event("phases-updated"));
+    } catch (error) {
+      console.error("Error updating phase:", error);
+      setErrMessage("Failed to update phase. Please try again.");
       setPopUpError(true);
     }
   };
@@ -77,7 +99,9 @@ export default function PhasesPage() {
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
-          <p className="text-slate-400 text-xs font-medium tracking-wider uppercase">Loading phases</p>
+          <p className="text-slate-400 text-xs font-medium tracking-wider uppercase">
+            Loading phases
+          </p>
         </div>
       </div>
     );
@@ -98,7 +122,9 @@ export default function PhasesPage() {
         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
           Workflow Configuration
         </p>
-        <h1 className="text-2xl font-black text-slate-800 leading-none">Phases</h1>
+        <h1 className="text-2xl font-black text-slate-800 leading-none">
+          Phases
+        </h1>
       </div>
 
       {/* Groups */}
@@ -106,9 +132,12 @@ export default function PhasesPage() {
         <div
           key={key}
           className="rounded-xl overflow-hidden bg-white"
-          style={{ border: "1px solid #e2e8f0", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
+          style={{
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+          }}
         >
-          {/* Section Header — matches Analytics SectionCard */}
+          {/* Section Header */}
           <div
             className="px-5 py-3 flex items-center justify-between"
             style={{ background: "linear-gradient(90deg, #0f172a, #1e3a5f)" }}
@@ -120,21 +149,31 @@ export default function PhasesPage() {
               </span>
               <span
                 className="text-[10px] font-bold rounded-full px-2 py-0.5 ml-1"
-                style={{ background: "rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.55)" }}
+                style={{
+                  background: "rgba(255,255,255,0.10)",
+                  color: "rgba(255,255,255,0.55)",
+                }}
               >
                 {groupedPhases[key].length}
               </span>
             </div>
             <button
-              onClick={() => { setAddingTo(key); setNewPhaseLabel(""); }}
+              onClick={() => {
+                setAddingTo(key);
+                setNewPhaseLabel("");
+              }}
               className="text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all duration-150"
               style={{
                 background: "rgba(255,255,255,0.08)",
                 color: "rgba(255,255,255,0.7)",
                 border: "1px solid rgba(255,255,255,0.12)",
               }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.14)"}
-              onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = "rgba(255,255,255,0.14)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "rgba(255,255,255,0.08)")
+              }
             >
               + Add Phase
             </button>
@@ -151,12 +190,12 @@ export default function PhasesPage() {
               </div>
             ) : (
               <div className="flex flex-wrap gap-3">
-                {groupedPhases[key].map((phase, i) => (
+                {groupedPhases[key].map((phase) => (
                   <PhaseCard
                     key={phase.id}
                     phase={phase}
                     onDelete={handleDeletePhase}
-                    index={i}
+                    onUpdate={handleUpdatePhase}
                   />
                 ))}
 
@@ -181,13 +220,20 @@ export default function PhasesPage() {
                         if (e.key === "Escape") setAddingTo(null);
                       }}
                       className="w-full text-sm rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                      style={{ border: "1px solid #e2e8f0", background: "#fff", color: "#1e293b" }}
+                      style={{
+                        border: "1px solid #e2e8f0",
+                        background: "#fff",
+                        color: "#1e293b",
+                      }}
                     />
                     <div className="flex gap-2 mt-auto">
                       <button
                         onClick={() => handleAddPhase(key)}
                         className="flex-1 text-[10px] font-bold uppercase tracking-widest rounded-lg py-1.5 transition-all"
-                        style={{ background: "linear-gradient(90deg,#1e40af,#3b82f6)", color: "#fff" }}
+                        style={{
+                          background: "linear-gradient(90deg,#1e40af,#3b82f6)",
+                          color: "#fff",
+                        }}
                       >
                         Add
                       </button>
@@ -217,12 +263,19 @@ export default function PhasesPage() {
               border: "1px solid #ef444430",
             }}
           >
-            <p className="text-[10px] font-bold uppercase tracking-widest text-red-400 mb-1">Error</p>
-            <p className="text-white font-semibold text-sm mb-4">{errMessage}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-red-400 mb-1">
+              Error
+            </p>
+            <p className="text-white font-semibold text-sm mb-4">
+              {errMessage}
+            </p>
             <button
               onClick={() => setPopUpError(false)}
               className="w-full text-[10px] font-bold uppercase tracking-widest rounded-lg py-2 transition-all"
-              style={{ background: "linear-gradient(90deg,#b91c1c,#ef4444)", color: "#fff" }}
+              style={{
+                background: "linear-gradient(90deg,#b91c1c,#ef4444)",
+                color: "#fff",
+              }}
             >
               Dismiss
             </button>
@@ -233,59 +286,273 @@ export default function PhasesPage() {
   );
 }
 
-function PhaseCard({ phase, onDelete }) {
+// ── PhaseCard ─────────────────────────────────────────────────
+function PhaseCard({ phase, onDelete, onUpdate }) {
+  const [editing, setEditing] = useState(false);
+  const [label, setLabel] = useState(phase.label);
+  const [isDefault, setIsDefault] = useState(phase.isDefault === 1);
+  const [isFinal, setIsFinal] = useState(phase.isFinal === 1);
+  const [saving, setSaving] = useState(false);
+  const [sortOrderValue, setSortOrderValue] = useState(phase.sortOrder || 0);
+  const inputRef = useRef(null);
+
+  // Keep local state in sync if the parent pushes a fresh phase object
+  // useEffect(() => {
+  //   if (!editing) {
+  //     setLabel(phase.label);
+  //     setIsDefault(phase.isDefault === 1);
+  //     setIsFinal(phase.isFinal === 1);
+  //   }
+  // }, [phase, editing]);
+
+  useEffect(() => {
+    if (!editing) {
+      setLabel(phase.label);
+      setIsDefault(phase.isDefault === 1);
+      setIsFinal(phase.isFinal === 1);
+      setSortOrderValue(phase.sortOrder || 0);
+    }
+  }, [phase, editing]);
+
+  const openEdit = () => {
+    setLabel(phase.label);
+    setIsDefault(phase.isDefault === 1);
+    setIsFinal(phase.isFinal === 1);
+    setEditing(true);
+    // Focus the input on the next paint
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const cancelEdit = (key) => {
+    setLabel(phase.label);
+    setIsDefault(phase.isDefault === 1);
+    setIsFinal(phase.isFinal === 1);
+    setEditing(false);
+  };
+
+  const saveEdit = async (key) => {
+    const trimmed = label.trim();
+    if (!trimmed) return;
+    setSaving(true);
+    await onUpdate(phase.id, {
+      label: trimmed,
+      isDefault: isDefault ? 1 : 0,
+      isFinal: isFinal ? 1 : 0,
+      grouping: key,
+      sortOrder: sortOrderValue,
+    });
+    setSaving(false);
+    setEditing(false);
+  };
+
+  // ── View mode ────────────────────────────────────────────
+  if (!editing) {
+    return (
+      <div
+        className="relative w-44 rounded-xl p-4 flex flex-col bg-white group"
+        style={{
+          minHeight: 120,
+          border: "1px solid #e2e8f0",
+          borderTop: "3px solid #1e40af",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+          transition: "box-shadow 0.15s",
+        }}
+        onMouseEnter={(e) =>
+          (e.currentTarget.style.boxShadow = "0 4px 12px rgba(30,64,175,0.10)")
+        }
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)")
+        }
+      >
+        {/* Sort Order Number */}
+        <div
+          onClick={() => saveEdit(phase.grouping)}
+          disabled={saving || !label.trim()}
+          className="absolute bottom-2.5 right-2.5 w-5 h-5 flex text-sm font-medium text-gray-400 items-center justify-center rounded-full transition-all"
+          title="Sort Order"
+        >
+          {phase.sortOrder}
+        </div>
+
+        {/* Edit button */}
+        <button
+          onClick={openEdit}
+          className="absolute top-2.5 right-8 w-5 h-5 flex items-center justify-center rounded-full transition-all"
+          style={{ background: "#f1f5f9", color: "#94a3b8" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#eff6ff";
+            e.currentTarget.style.color = "#1d4ed8";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "#f1f5f9";
+            e.currentTarget.style.color = "#94a3b8";
+          }}
+          title="Edit phase"
+        >
+          <Pencil size={10} />
+        </button>
+
+        {/* Delete button */}
+        <button
+          onClick={() => onDelete(phase.id)}
+          className="absolute top-2.5 right-2.5 w-5 h-5 flex items-center justify-center rounded-full transition-all text-[10px]"
+          style={{ background: "#f1f5f9", color: "#94a3b8" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#fee2e2";
+            e.currentTarget.style.color = "#ef4444";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "#f1f5f9";
+            e.currentTarget.style.color = "#94a3b8";
+          }}
+          title="Delete phase"
+        >
+          <Trash2 size={12} />
+        </button>
+
+        {/* Label */}
+        <span className="text-sm font-semibold text-slate-700 leading-snug pr-10 mt-1">
+          {phase.label}
+        </span>
+
+        {/* Badges */}
+        <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
+          {phase.isDefault === 1 && (
+            <span
+              className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+              style={{ background: "#eff6ff", color: "#1d4ed8" }}
+            >
+              Default
+            </span>
+          )}
+          {phase.isFinal === 1 && (
+            <span
+              className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+              style={{ background: "#ecfdf5", color: "#059669" }}
+            >
+              Final
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Edit mode ────────────────────────────────────────────
   return (
     <div
       className="relative w-44 rounded-xl p-4 flex flex-col bg-white"
       style={{
         minHeight: 120,
-        border: "1px solid #e2e8f0",
+        border: "2px solid #3b82f6",
         borderTop: "3px solid #1e40af",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+        boxShadow: "0 0 0 3px #bfdbfe",
       }}
     >
-      {/* Delete button */}
+      {/* Save button */}
       <button
-        onClick={() => onDelete(phase.id)}
-        className="absolute top-2.5 right-2.5 w-5 h-5 flex items-center justify-center rounded-full transition-all text-[10px]"
-        style={{ background: "#f1f5f9", color: "#94a3b8" }}
-        onMouseEnter={e => {
-          e.currentTarget.style.background = "#fee2e2";
-          e.currentTarget.style.color = "#ef4444";
+        onClick={() => saveEdit(phase.grouping)}
+        disabled={saving || !label.trim()}
+        className="absolute top-2.5 right-8 w-5 h-5 flex items-center justify-center rounded-full transition-all"
+        style={{
+          background: saving || !label.trim() ? "#f1f5f9" : "#dcfce7",
+          color: saving || !label.trim() ? "#94a3b8" : "#16a34a",
         }}
-        onMouseLeave={e => {
-          e.currentTarget.style.background = "#f1f5f9";
-          e.currentTarget.style.color = "#94a3b8";
-        }}
-        title="Delete phase"
+        title="Save"
       >
-        ✕
+        <Check size={10} />
       </button>
-
-      {/* Label */}
-      <span className="text-sm font-semibold text-slate-700 leading-snug pr-5 mt-1">
-        {phase.label}
-      </span>
-
-      {/* Badges */}
-      <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
-        {phase.isDefault === 1 && (
-          <span
-            className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-            style={{ background: "#eff6ff", color: "#1d4ed8" }}
-          >
-            Default
-          </span>
-        )}
-        {phase.isFinal === 1 && (
-          <span
-            className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-            style={{ background: "#ecfdf5", color: "#059669" }}
-          >
-            Final
-          </span>
-        )}
+      {/* Cancel button */}
+      <button
+        onClick={() => cancelEdit(phase.grouping)}
+        disabled={saving}
+        className="absolute top-2.5 right-2.5 w-5 h-5 flex items-center justify-center rounded-full transition-all text-[10px]"
+        style={{ background: "#fee2e2", color: "#ef4444" }}
+        title="Cancel"
+      >
+        <X size={10} />
+      </button>
+      {/* Name input */}
+      <input
+        ref={inputRef}
+        type="text"
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") saveEdit();
+          if (e.key === "Escape") cancelEdit();
+        }}
+        className="w-full text-sm font-semibold rounded-lg px-2 py-1 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-300 pr-10"
+        style={{
+          border: "1px solid #bfdbfe",
+          background: "#eff6ff",
+          color: "#1e293b",
+        }}
+        placeholder="Phase name"
+      />
+      {/* Flag toggles */}
+      <div className="mt-auto pt-3 flex flex-col gap-2">
+        <ToggleRow
+          label="Default"
+          active={isDefault}
+          activeColor="#1d4ed8"
+          activeBg="#eff6ff"
+          onToggle={() => setIsDefault((v) => !v)}
+        />
+        <ToggleRow
+          label="Final"
+          active={isFinal}
+          activeColor="#059669"
+          activeBg="#ecfdf5"
+          onToggle={() => setIsFinal((v) => !v)}
+        />
       </div>
+      {/* Flag toggles */}
+      <div className="mt-auto pt-2 flex flex-col gap-2">
+        <input
+          type="number"
+          className="border border-gray-300 rounded-lg px-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Sort Order"
+          value={sortOrderValue}
+          onChange={(e) => setSortOrderValue(Number(e.target.value))}
+        />
+      </div>
+      {saving && (
+        <div className="absolute inset-0 rounded-xl flex items-center justify-center bg-white/70">
+          <div className="w-4 h-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+        </div>
+      )}
     </div>
+  );
+}
+
+// ── ToggleRow — compact pill-style toggle for edit mode ───────
+function ToggleRow({ label, active, activeColor, activeBg, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      className="flex items-center gap-2 w-full rounded-lg px-2 py-1 transition-all"
+      style={{
+        background: active ? activeBg : "#f8fafc",
+        border: `1px solid ${active ? activeColor + "30" : "#e2e8f0"}`,
+      }}
+    >
+      {/* Toggle track */}
+      <span
+        className="relative flex-shrink-0 w-7 h-4 rounded-full transition-colors duration-200"
+        style={{ background: active ? activeColor : "#cbd5e1" }}
+      >
+        <span
+          className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform duration-200"
+          style={{ transform: active ? "translateX(12px)" : "translateX(0)" }}
+        />
+      </span>
+      <span
+        className="text-[9px] font-bold uppercase tracking-widest"
+        style={{ color: active ? activeColor : "#94a3b8" }}
+      >
+        {label}
+      </span>
+    </button>
   );
 }
