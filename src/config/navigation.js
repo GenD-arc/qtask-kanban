@@ -6,35 +6,28 @@ import {
   ActivitySquare,
   BarChart2,
   FlaskConical,
-  ClipboardList,
   Settings2,
-  Layers,
-  AlertOctagon,
-  CheckSquare,
-  FileBarChart,
   FolderKanban
 } from "lucide-react";
 
 /**
  * Navigation config per role.
  * Each item:
- *   key              — unique identifier, used as the active page key
- *   label            — display text
- *   icon             — lucide-react component
- *   underDevelopment — grays out the item and shows "Under Development" badge
+ * key              — unique identifier, used as the active page key
+ * label            — display text
+ * icon             — lucide-react component
+ * underDevelopment — grays out the item and shows "Under Development" badge
  */
 
 const NAV_ITEMS = {
   Admin: [
-    { key: "dashboard",       label: "Dashboard",       icon: LayoutDashboard }, //idk just yet if this is necessary kayo na lang muna bahala kung anong gagawin here
+    { key: "dashboard",       label: "Dashboard",       icon: LayoutDashboard }, 
     { key: "kanban",          label: "Kanban Board",    icon: KanbanSquare    },
     { key: "users",           label: "User Management", icon: Users           },
-    { key: "projects", label: "Projects", icon: FolderKanban },
-   { key: "analytics",       label: "Analytics",       icon: BarChart2},
-    { key: "phases",          label: "Phases",          icon: Layers          }, //kinda redundant and optional
-    { key: "severities",      label: "Severities",      icon: AlertOctagon    }, //kinda redundant and optional
-    { key: "statuses",        label: "Statuses",        icon: CheckSquare     }, //kinda redundant and optional
+    { key: "projects",        label: "Projects",        icon: FolderKanban    },
+    { key: "analytics",       label: "Analytics",       icon: BarChart2       },
     { key: "logs",            label: "Activity Logs",   icon: ActivitySquare  },
+    { key: "settings",        label: "Settings",        icon: Settings2       },
   ],
 
   ProjectManager: [

@@ -15,30 +15,6 @@ function normaliseSubtasks(subtasks) {
   }));
 }
 
-/**
- * TaskDetailModal
- *
- * After the phase/status swap:
- *   - "Phase" (phaseLabel) shows which Kanban column the task is currently in.
- *     The phase is changed by dragging the card on the board, NOT here.
- *   - "Status" (statusLabel) is the secondary workflow attribute (e.g.
- *     Open, For Verification, Closed). This IS editable here.
- *   - The edit form lets the PM update: Assignee, QA Assignee, Severity,
- *     Status, Target date.
- *   - QA Assignee dropdown is filtered to only show users with role === "QA".
- *   - An amber warning is shown in view mode if task is in a QA phase
- *     but has no QA assignee.
- *
- * Props:
- *   task       — task object from the DB
- *   users      — [{ id, name, role }]
- *   severities — [{ id, label }]
- *   statuses   — [{ id, label }]  ← workflow statuses (NOT Kanban columns)
- *   onUpdate   — fn(taskId, { subtasks })
- *   onEdit     — fn(taskId, payload)
- *   onDelete   — fn(taskId)
- *   onClose    — fn()
- */
 export default function TaskDetailModal({
   task,
   users      = [],
@@ -54,34 +30,44 @@ export default function TaskDetailModal({
   const [editMode,         setEditMode]         = useState(false);
   const [editForm,         setEditForm]         = useState({
     assigneeId:   task.assigneeId   ?? "",
-    qaAssigneeId: task.qaAssigneeId ?? "",   // QA assignee — separate from dev assignee
+    qaAssigneeId: task.qaAssigneeId ?? "",
     severityId:   task.severityId   ?? "",
-    statusId:     task.statusId     ?? "",   // workflow status — editable
+    statusId:     task.statusId     ?? "",
     targetDate:   task.targetDate ? task.targetDate.split("T")[0] : "",
   });
   const [saving,           setSaving]           = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting,         setDeleting]         = useState(false);
 
-  const doneCount  = localSubtasks.filter((s) => s.isDone).length;
-  const progress   = calcProgressFromSubtasks(localSubtasks) ?? task.progress ?? 0;
-  const sc         =
+  // ── Optimistic local status for the modal's own status pill ──────────────
+  const [localStatus, setLocalStatus] = useState({
+    label: task.statusLabel ?? null,
+    color: task.statusColor ?? "#94a3b8",
+  });
+
+  const doneCount = localSubtasks.filter((s) => s.isDone).length;
+  const progress  = calcProgressFromSubtasks(localSubtasks) ?? task.progress ?? 0;
+  const sc        =
     SEVERITY_COLORS[task.severity] ??
     SEVERITY_COLORS[task.severityLabel] ??
     SEVERITY_COLORS.Low;
 
-  // ── Derived flags ─────────────────────────────────────────
   const isQAPhase = task.phaseGrouping === "qa";
   const missingQA = isQAPhase && !task.qaAssigneeId;
-
-  // ── User lists filtered by role ───────────────────────────
-  const qaUsers = users.filter((u) => u.role === "QA");
+  const qaUsers   = users.filter((u) => u.role === "QA");
 
   const setField = (k, v) => setEditForm((prev) => ({ ...prev, [k]: v }));
 
-  // ── Edit save ─────────────────────────────────────────────
+  // ── Edit save ─────────────────────────────────────────────────────────────
   const handleSaveEdit = async () => {
     setSaving(true);
+
+    // Resolve the selected status from the statuses list so we have
+    // the label + color ready for an optimistic update.
+    const matchedStatus = statuses.find(
+      (s) => String(s.id) === String(editForm.statusId)
+    );
+
     try {
       await onEdit(task.id, {
         title:        task.title,
@@ -91,14 +77,24 @@ export default function TaskDetailModal({
         severityId:   editForm.severityId   ? Number(editForm.severityId)   : null,
         statusId:     editForm.statusId     ? Number(editForm.statusId)     : null,
         targetDate:   editForm.targetDate   || null,
+        // Pass resolved display fields so the parent can update task objects
+        // in its own state — TaskCard's useEffect will pick these up instantly.
+        statusLabel:  matchedStatus?.label  ?? task.statusLabel,
+        statusColor:  matchedStatus?.color  ?? task.statusColor,
       });
+
+      // Optimistically update the status pill inside this modal too.
+      if (matchedStatus) {
+        setLocalStatus({ label: matchedStatus.label, color: matchedStatus.color });
+      }
+
       setEditMode(false);
     } finally {
       setSaving(false);
     }
   };
 
-  // ── Subtask handlers ──────────────────────────────────────
+  // ── Subtask handlers ──────────────────────────────────────────────────────
   const handleToggleSubtask = (subtaskId) => {
     setLocalSubtasks((prev) => {
       const updated = prev.map((s) =>
@@ -195,10 +191,8 @@ export default function TaskDetailModal({
             <p className="text-sm text-gray-600 leading-relaxed">{task.description}</p>
           )}
 
-          {/* No QA assigned warning banner — shown in view mode only */}
           {missingQA && !editMode && (
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200
-                            text-amber-700 text-xs rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded-lg px-3 py-2">
               <AlertTriangle size={13} className="shrink-0" />
               <span>This task is in a QA phase but has no QA assignee. Edit to assign one.</span>
             </div>
@@ -226,8 +220,7 @@ export default function TaskDetailModal({
                 <div className="flex items-center gap-2">
                   {task.qaAssigneeName ? (
                     <>
-                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700
-                                       flex items-center justify-center font-semibold text-[10px]">
+                      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-semibold text-[10px]">
                         {task.qaAssigneeName.charAt(0).toUpperCase()}
                       </span>
                       <span className="text-sm text-gray-700">{task.qaAssigneeName}</span>
@@ -251,7 +244,7 @@ export default function TaskDetailModal({
                 <p className="text-sm text-gray-700">{formatShortDate(task.targetDate) ?? "—"}</p>
               </div>
 
-              {/* Phase = which Kanban column the card is in — read-only here */}
+              {/* Phase — read-only */}
               <div className="space-y-0.5">
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Phase (column)</p>
                 <span className="inline-block text-sm font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
@@ -259,12 +252,34 @@ export default function TaskDetailModal({
                 </span>
               </div>
 
-              {/* Status = workflow attribute, editable */}
+              {/* Status — uses localStatus for instant feedback */}
               <div className="space-y-0.5">
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Status</p>
-                <span className="inline-block text-sm font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
-                  {task.statusLabel ?? "—"}
-                </span>
+                {localStatus.label ? (
+                  <span
+                    className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full"
+                    style={{
+                      color:      localStatus.color,
+                      background: `${localStatus.color}18`,
+                      border:     `1px solid ${localStatus.color}30`,
+                      transition: "color 0.2s ease, background 0.2s ease, border-color 0.2s ease",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width:        6,
+                        height:       6,
+                        borderRadius: "50%",
+                        background:   localStatus.color,
+                        flexShrink:   0,
+                        display:      "inline-block",
+                      }}
+                    />
+                    {localStatus.label}
+                  </span>
+                ) : (
+                  <span className="text-sm text-gray-400">—</span>
+                )}
               </div>
 
               {task.actualEndDate && (
@@ -281,7 +296,7 @@ export default function TaskDetailModal({
                 Editing assignee, QA assignee, severity, status and target date
               </p>
 
-              {/* Dev assignee — all users */}
+              {/* Dev assignee */}
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Assignee</label>
                 <select value={editForm.assigneeId} onChange={(e) => setField("assigneeId", e.target.value)}
@@ -293,7 +308,7 @@ export default function TaskDetailModal({
                 </select>
               </div>
 
-              {/* QA assignee — filtered to QA role only */}
+              {/* QA assignee */}
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">QA Assignee</label>
                 <select value={editForm.qaAssigneeId} onChange={(e) => setField("qaAssigneeId", e.target.value)}
@@ -305,6 +320,7 @@ export default function TaskDetailModal({
                 </select>
               </div>
 
+              {/* Severity */}
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Severity</label>
                 <select value={editForm.severityId} onChange={(e) => setField("severityId", e.target.value)}
@@ -316,20 +332,36 @@ export default function TaskDetailModal({
                 </select>
               </div>
 
-              {/* Status = workflow attribute, NOT the Kanban column */}
+              {/* Status — with color preview dot */}
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Status (workflow)
-                </label>
-                <select value={editForm.statusId} onChange={(e) => setField("statusId", e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 bg-white">
-                  <option value="">— None —</option>
-                  {statuses.map((st) => (
-                    <option key={st.id} value={st.id}>{st.label}</option>
-                  ))}
-                </select>
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status (workflow)</label>
+                <div className="flex items-center gap-2">
+                  <span
+                    style={{
+                      width:        10,
+                      height:       10,
+                      borderRadius: "50%",
+                      flexShrink:   0,
+                      background:   statuses.find((s) => String(s.id) === String(editForm.statusId))?.color ?? "#94a3b8",
+                      display:      "inline-block",
+                      border:       "1px solid rgba(0,0,0,0.1)",
+                      transition:   "background 0.2s ease",
+                    }}
+                  />
+                  <select
+                    value={editForm.statusId}
+                    onChange={(e) => setField("statusId", e.target.value)}
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 bg-white"
+                  >
+                    <option value="">— None —</option>
+                    {statuses.map((st) => (
+                      <option key={st.id} value={st.id}>{st.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
+              {/* Target date */}
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Target date</label>
                 <input type="date" value={editForm.targetDate} onChange={(e) => setField("targetDate", e.target.value)}

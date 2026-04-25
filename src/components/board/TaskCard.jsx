@@ -1,31 +1,66 @@
+import { useState, useEffect } from "react";
 import {
   formatShortDate,
   calcProgressFromSubtasks,
 } from "../../utils/kanbanUtils";
 import { AlertTriangle } from "lucide-react";
 
-const SEVERITY_COLORS = {
+// Default severity colors (fallback if no color from DB)
+const DEFAULT_SEVERITY_COLORS = {
   "1 - Critical": "#ef4444",
   "2 - High":     "#f97316",
   "3 - Medium":   "#f59e0b",
   "4 - Low":      "#10b981",
+  "5 - Cosmetic": "#6b7280",
 };
 
-function getSeverityColor(label) {
-  return SEVERITY_COLORS[label] ?? "#94a3b8";
+function getSeverityColor(severityColor, severityLabel) {
+  if (severityColor) return severityColor;
+  if (severityLabel && DEFAULT_SEVERITY_COLORS[severityLabel])
+    return DEFAULT_SEVERITY_COLORS[severityLabel];
+  if (severityLabel) {
+    const label = severityLabel.toLowerCase();
+    if (label.includes("critical")) return "#ef4444";
+    if (label.includes("high"))     return "#f97316";
+    if (label.includes("medium"))   return "#f59e0b";
+    if (label.includes("low"))      return "#10b981";
+  }
+  return "#94a3b8";
 }
 
 export default function TaskCard({ task, onCardClick }) {
-  const shortDate      = formatShortDate(task.targetDate);
-  const subtasks       = task.subtasks ?? [];
-  const subtaskTotal   = subtasks.length;
-  const subtaskDone    = subtasks.filter((s) => s.isDone || s.done).length;
-  const progress       = calcProgressFromSubtasks(subtasks) ?? task.progress ?? 0;
-  const severityColor  = getSeverityColor(task.severityLabel);
+  const shortDate    = formatShortDate(task.targetDate);
+  const subtasks     = task.subtasks ?? [];
+  const subtaskTotal = subtasks.length;
+  const subtaskDone  = subtasks.filter((s) => s.isDone || s.done).length;
+  const progress     = calcProgressFromSubtasks(subtasks) ?? task.progress ?? 0;
+
+  const severityColor = getSeverityColor(task.severityColor, task.severityLabel);
+
+  const displaySeverityLabel = task.severityLabel?.replace(/^\d+ - /, "") ?? task.severityLabel;
 
   const isQAPhase      = task.phaseGrouping === "qa";
   const activeAssignee = isQAPhase ? task.qaAssigneeName : task.assigneeName;
   const missingQA      = isQAPhase && !task.qaAssigneeId;
+
+  // ── Optimistic local status state ─────────────────────────────────────────
+  // Initialised from props; updates immediately when the modal saves,
+  // and also stays in sync if the parent ever pushes a fresh task object.
+  const [localStatus, setLocalStatus] = useState({
+    label: task.statusLabel ?? null,
+    color: task.statusColor ?? "#94a3b8",
+  });
+
+  // Keep local state in sync whenever the parent provides a new task prop
+  // (e.g. after a background refetch or board-level state update).
+  useEffect(() => {
+    setLocalStatus({
+      label: task.statusLabel ?? null,
+      color: task.statusColor ?? "#94a3b8",
+    });
+  }, [task.statusLabel, task.statusColor]);
+
+  const statusColor = localStatus.color;
 
   let mouseDownTime = 0;
   const handleMouseDown = () => { mouseDownTime = Date.now(); };
@@ -61,19 +96,18 @@ export default function TaskCard({ task, onCardClick }) {
         e.currentTarget.style.borderLeftColor = severityColor;
       }}
     >
-      {/* Top row: severity dot + label + subtask count */}
+      {/* Top row: severity dot + label + status badge */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         {task.severityLabel ? (
-          <span
+          <div
             style={{
               display:       "flex",
               alignItems:    "center",
-              gap:           5,
+              gap:           6,
               fontSize:      10,
               fontWeight:    700,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color:         "#64748b",
             }}
           >
             <span
@@ -83,19 +117,47 @@ export default function TaskCard({ task, onCardClick }) {
                 borderRadius: "50%",
                 background:   severityColor,
                 flexShrink:   0,
+                boxShadow:    `0 0 0 1px ${severityColor}20`,
               }}
             />
-            {task.severityLabel}
-          </span>
+            <span style={{ color: severityColor }}>
+              {displaySeverityLabel}
+            </span>
+          </div>
         ) : (
           <span />
         )}
-        {subtaskTotal > 0 && (
-          <span style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8" }}>
-            {subtaskDone}/{subtaskTotal}
+
+        {/* Status badge — updates immediately via localStatus */}
+        {localStatus.label && (
+          <span
+            style={{
+              fontSize:      9,
+              fontWeight:    700,
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+              color:         statusColor,
+              background:    `${statusColor}18`,
+              border:        `1px solid ${statusColor}30`,
+              borderRadius:  999,
+              padding:       "2px 7px",
+              whiteSpace:    "nowrap",
+              transition:    "color 0.2s ease, background 0.2s ease, border-color 0.2s ease",
+            }}
+          >
+            {localStatus.label}
           </span>
         )}
       </div>
+
+      {/* Subtask count */}
+      {subtaskTotal > 0 && (
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8" }}>
+            {subtaskDone}/{subtaskTotal}
+          </span>
+        </div>
+      )}
 
       {/* Title */}
       <p style={{ fontSize: 13, fontWeight: 600, color: "#1e293b", lineHeight: 1.4, margin: 0 }}>

@@ -4,7 +4,6 @@ const pool = require("../config/db");
 
 // GET /api/statuses
 // Returns all statuses ordered by sortOrder.
-// Used by the Kanban board to build columns dynamically.
 router.get("/", async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -18,16 +17,16 @@ router.get("/", async (req, res) => {
 });
 
 // POST /api/statuses
-// Creates a new status (Admin only in full system).
+// Creates a new status.
 router.post("/", async (req, res) => {
-  const { label, sortOrder = 0, isDefault = 0, isFinal = 0 } = req.body;
+  const { label, color = "#6b7280", sortOrder = 0, isDefault = 0, isFinal = 0 } = req.body;
   if (!label?.trim())
     return res.status(400).json({ message: "Label is required" });
 
   try {
     const [result] = await pool.query(
-      "INSERT INTO statuses (label, sortOrder, isDefault, isFinal) VALUES (?, ?, ?, ?)",
-      [label.trim(), sortOrder, isDefault ? 1 : 0, isFinal ? 1 : 0]
+      "INSERT INTO statuses (label, color, sortOrder, isDefault, isFinal) VALUES (?, ?, ?, ?, ?)",
+      [label.trim(), color, sortOrder, isDefault ? 1 : 0, isFinal ? 1 : 0]
     );
     const [rows] = await pool.query("SELECT * FROM statuses WHERE id = ?", [result.insertId]);
     res.status(201).json(rows[0]);
@@ -40,14 +39,14 @@ router.post("/", async (req, res) => {
 });
 
 // PUT /api/statuses/:id
-// Rename or reorder a status.
+// Update a status.
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
-  const { label, sortOrder, isDefault, isFinal } = req.body;
+  const { label, color = "#6b7280", sortOrder, isDefault, isFinal } = req.body;
   try {
     await pool.query(
-      "UPDATE statuses SET label = ?, sortOrder = ?, isDefault = ?, isFinal = ? WHERE id = ?",
-      [label, sortOrder, isDefault ? 1 : 0, isFinal ? 1 : 0, id]
+      "UPDATE statuses SET label = ?, color = ?, sortOrder = ?, isDefault = ?, isFinal = ? WHERE id = ?",
+      [label, color, sortOrder, isDefault ? 1 : 0, isFinal ? 1 : 0, id]
     );
     const [rows] = await pool.query("SELECT * FROM statuses WHERE id = ?", [id]);
     res.json(rows[0]);
@@ -58,7 +57,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE /api/statuses/:id
-// Blocked if any tasks are using this status (SRS §1.2 referential integrity).
+// Blocked if any tasks are using this status.
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
   try {

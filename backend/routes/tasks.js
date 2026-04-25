@@ -37,67 +37,86 @@ async function getTaskById(id) {
   return task;
 }
 
-// ─── GET /api/tasks ──────────────────────────────────────────
 router.get("/", async (req, res) => {
-  const { projectId, assignedUserId, grouping  } = req.query;
-
-  const conditions = [];
-  const params     = [];
-
+  const { projectId, statusId, phaseId } = req.query;
+  let query = `
+    SELECT 
+      t.*,
+      st.label  AS statusLabel,
+      st.color  AS statusColor,
+      s.label as severityLabel,
+      s.color as severityColor,
+      s.sortOrder as severitySortOrder,
+      st.label as statusLabel,
+      p.label as phaseLabel,
+      p.grouping as phaseGrouping,
+      assignee.name as assigneeName,
+      qaAssignee.name as qaAssigneeName
+    FROM tasks t
+    LEFT JOIN severities s ON t.severityId = s.id
+    LEFT JOIN statuses st ON t.statusId = st.id
+    LEFT JOIN phases p ON t.phaseId = p.id
+    LEFT JOIN users assignee ON t.assigneeId = assignee.id
+    LEFT JOIN users qaAssignee ON t.qaAssigneeId = qaAssignee.id
+    WHERE 1=1
+  `;
+  
+  const params = [];
   if (projectId) {
-    conditions.push("t.projectId = ?");
-    params.push(Number(projectId));
+    query += ` AND t.projectId = ?`;
+    params.push(projectId);
   }
-
-  // Filter by dev or qa assignee based on grouping
-  if (assignedUserId && grouping === "qa") {
-    conditions.push("t.qaAssigneeId = ?");
-    params.push(Number(assignedUserId));
-  } else if (assignedUserId && grouping === "dev") {
-    conditions.push("t.assigneeId = ?");
-    params.push(Number(assignedUserId));
+  if (statusId) {
+    query += ` AND t.statusId = ?`;
+    params.push(statusId);
   }
-
-  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-
+  if (phaseId) {
+    query += ` AND t.phaseId = ?`;
+    params.push(phaseId);
+  }
+  
   try {
-    const [rows] = await pool.query(
-      `SELECT
-         t.id, t.projectId, t.title, t.description, t.progress,
-         t.targetDate, t.actualEndDate, t.createdAt, t.updatedAt,
-         t.phaseId,      p.label   AS phaseLabel,
-         p.isFinal       AS phaseIsFinal,
-         p.isDefault     AS phaseIsDefault,
-         p.grouping      AS phaseGrouping,
-         t.statusId,     s.label   AS statusLabel,
-         t.severityId,   sv.label  AS severityLabel,
-         t.assigneeId,   u.name    AS assigneeName,   u.username AS assigneeUsername,
-         t.qaAssigneeId, qa.name   AS qaAssigneeName, qa.username AS qaAssigneeUsername
-       FROM tasks t
-       LEFT JOIN phases     p  ON t.phaseId      = p.id
-       LEFT JOIN statuses   s  ON t.statusId     = s.id
-       LEFT JOIN severities sv ON t.severityId   = sv.id
-       LEFT JOIN users      u  ON t.assigneeId   = u.id
-       LEFT JOIN users      qa ON t.qaAssigneeId = qa.id
-       ${where}
-       ORDER BY t.createdAt DESC`,
-      params
-    );
-
-    for (const task of rows) {
-      const [subtasks] = await pool.query(
-        "SELECT id, title, isDone FROM subtasks WHERE taskId = ? ORDER BY id ASC",
-        [task.id]
-      );
-      task.subtasks = subtasks;
-    }
-
+    const [rows] = await pool.query(query, params);
     res.json(rows);
   } catch (err) {
     console.error("GET /tasks error:", err);
     res.status(500).json({ message: "Failed to fetch tasks" });
   }
 });
+
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+  const query = `
+    SELECT 
+      t.*,
+      s.label as severityLabel,
+      s.color as severityColor,
+      s.sortOrder as severitySortOrder,
+      st.label as statusLabel,
+      p.label as phaseLabel,
+      p.grouping as phaseGrouping,
+      assignee.name as assigneeName,
+      qaAssignee.name as qaAssigneeName
+    FROM tasks t
+    LEFT JOIN severities s ON t.severityId = s.id
+    LEFT JOIN statuses st ON t.statusId = st.id
+    LEFT JOIN phases p ON t.phaseId = p.id
+    LEFT JOIN users assignee ON t.assigneeId = assignee.id
+    LEFT JOIN users qaAssignee ON t.qaAssigneeId = qaAssignee.id
+    WHERE t.id = ?
+  `;
+  
+  try {
+    const [rows] = await pool.query(query, [id]);
+    if (!rows.length) return res.status(404).json({ message: "Task not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("GET /tasks/:id error:", err);
+    res.status(500).json({ message: "Failed to fetch task" });
+  }
+});
+
+
 
 // ─── POST /api/tasks ─────────────────────────────────────────
 router.post("/", async (req, res) => {

@@ -41,12 +41,18 @@ function ModalShell({ title, onClose, children }) {
 export function ProjectFormModal({ project, users, onSave, onClose }) {
   const isEdit = !!project;
 
+  // Format the date if it exists to strictly match YYYY-MM-DD
+  const formattedDate = project?.targetEndDate 
+    ? project.targetEndDate.split('T')[0] 
+    : "";
+
   const [form, setForm] = useState({
     title:         project?.title         ?? "",
     description:   project?.description   ?? "",
     pmId:          project?.pmId          ?? "",
     clientName:    project?.clientName    ?? "",
-    targetEndDate: project?.targetEndDate ?? "",
+    targetEndDate: formattedDate,
+    status:        project?.status        ?? "ongoing", // <-- Added Status
   });
   const [error,   setError]   = useState(null);
   const [loading, setLoading] = useState(false);
@@ -72,6 +78,7 @@ export function ProjectFormModal({ project, users, onSave, onClose }) {
         pmId:          form.pmId ? Number(form.pmId) : null,
         clientName:    form.clientName.trim() || null,
         targetEndDate: form.targetEndDate || null,
+        status:        form.status, // <-- Pass Status to API
       });
       onClose();
     } catch (err) {
@@ -122,14 +129,25 @@ export function ProjectFormModal({ project, users, onSave, onClose }) {
           />
         </Field>
 
-        <Field label="Project Manager (optional)">
-          <select name="pmId" value={form.pmId} onChange={handleChange} className={inputClass}>
-            <option value="">Unassigned</option>
-            {pmUsers.map((u) => (
-              <option key={u.id} value={u.id}>{u.name}</option>
-            ))}
-          </select>
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Project Manager (optional)">
+            <select name="pmId" value={form.pmId} onChange={handleChange} className={inputClass}>
+              <option value="">Unassigned</option>
+              {pmUsers.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </Field>
+
+          {/* New Status Field */}
+          <Field label="Project Status">
+            <select name="status" value={form.status} onChange={handleChange} className={inputClass}>
+              <option value="ongoing">Ongoing</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </Field>
+        </div>
 
         <Field label="Target End Date (optional)">
           <input

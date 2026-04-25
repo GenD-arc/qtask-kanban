@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Apr 24, 2026 at 12:33 PM
+-- Generation Time: Apr 25, 2026 at 06:24 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -178,7 +178,35 @@ INSERT INTO `activity_logs` (`id`, `taskId`, `userId`, `action`, `createdAt`) VA
 (136, 1, 1, 'Phase changed from \"QA Execution\" to \"To Do (Ready for Dev)\"', '2026-04-24 17:30:55'),
 (137, 1, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"QA Execution\"', '2026-04-24 17:30:58'),
 (138, 1, 1, 'Phase changed from \"QA Execution\" to \"To Do (Ready for Dev)\"', '2026-04-24 18:21:01'),
-(139, 1, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"QA Execution\"', '2026-04-24 18:21:08');
+(139, 1, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"QA Execution\"', '2026-04-24 18:21:08'),
+(140, 2, 1, 'Severity changed from \"4 - Low\" to \"5 - Cosmetic Fix\"', '2026-04-24 19:32:31'),
+(141, 9, 1, 'Phase changed from \"Backlog (Requirements)\" to \"aa\"', '2026-04-24 19:44:44'),
+(142, 9, 1, 'Phase changed from \"aa\" to \"Backlog (Requirements)\"', '2026-04-24 19:45:26'),
+(143, 7, 1, 'Phase changed from \"In Progress\" to \"Completed\" — Actual End Date: 2026-04-24', '2026-04-24 20:04:30'),
+(144, 7, 1, 'Phase changed from \"Completed\" to \"In Progress\"', '2026-04-24 20:04:35'),
+(145, 7, 1, 'Phase changed from \"In Progress\" to \"Completed\" — Actual End Date: 2026-04-24', '2026-04-24 20:05:00'),
+(146, 8, 1, 'Phase changed from \"QA Execution\" to \"Completed\" — Actual End Date: 2026-04-24', '2026-04-24 20:44:28'),
+(147, 9, 1, 'Phase changed from \"Backlog (Requirements)\" to \"Completed\" — Actual End Date: 2026-04-24', '2026-04-24 20:44:31'),
+(148, 6, 1, 'Phase changed from \"Client Review - UAT\" to \"Completed\" — Actual End Date: 2026-04-25', '2026-04-25 11:38:57'),
+(149, 2, 5, 'Phase changed from \"In Progress\" to \"To Do (Ready for Dev)\"', '2026-04-25 11:53:45'),
+(150, 2, 5, 'Phase changed from \"To Do (Ready for Dev)\" to \"In Progress\"', '2026-04-25 11:53:51'),
+(151, 2, 5, 'Status changed from \"Not Started\" to \"Active\"', '2026-04-25 11:54:08'),
+(152, 2, 5, 'Status changed from \"Active\" to \"Clarification Needed\"', '2026-04-25 11:54:45'),
+(153, 2, 5, 'Status changed from \"Clarification Needed\" to \"Active\"', '2026-04-25 11:59:34'),
+(154, 2, 5, 'Status changed from \"Active\" to \"Bug Fixing\"', '2026-04-25 11:59:53'),
+(155, 2, 5, 'Status changed from \"Bug Fixing\" to \"For Verification\"', '2026-04-25 12:00:29'),
+(156, 2, 5, 'Severity changed from \"5 - Cosmetic Fix\" to \"4 - Low\"', '2026-04-25 12:00:37'),
+(157, 2, 5, 'Status changed from \"For Verification\" to \"Clarification Needed\"', '2026-04-25 12:01:04'),
+(158, 2, 5, 'Severity changed from \"4 - Low\" to \"3 - Medium\"', '2026-04-25 12:02:57'),
+(159, 2, 5, 'Status changed from \"Clarification Needed\" to \"Bug Fixing\"', '2026-04-25 12:09:49'),
+(160, 2, 5, 'Status changed from \"Bug Fixing\" to \"For Verification\"', '2026-04-25 12:10:24'),
+(161, 2, 5, 'Severity changed from \"3 - Medium\" to \"4 - Low\"', '2026-04-25 12:10:33'),
+(162, 2, 5, 'Status changed from \"For Verification\" to \"Bug Fixing\"', '2026-04-25 12:13:42'),
+(163, 2, 5, 'Status changed from \"Bug Fixing\" to \"Active\" · Severity changed from \"4 - Low\" to \"5 - Cosmetic Fix\"', '2026-04-25 12:14:40'),
+(164, 2, 5, 'Status changed from \"Active\" to \"Clarification Needed\" · Severity changed from \"5 - Cosmetic Fix\" to \"4 - Low\"', '2026-04-25 12:15:03'),
+(165, 2, 5, 'Status changed from \"Clarification Needed\" to \"Blocked\" · Severity changed from \"4 - Low\" to \"3 - Medium\"', '2026-04-25 12:15:20'),
+(166, 2, 5, 'Status changed from \"Blocked\" to \"For Verification\" · Severity changed from \"3 - Medium\" to \"4 - Low\"', '2026-04-25 12:16:06'),
+(167, 6, 4, 'Status changed from \"Not Started\" to \"Passed\"', '2026-04-25 12:16:53');
 
 -- --------------------------------------------------------
 
@@ -246,17 +274,19 @@ CREATE TABLE `projects` (
   `clientName` varchar(255) DEFAULT NULL,
   `targetEndDate` date DEFAULT NULL,
   `pmId` int(11) DEFAULT NULL,
-  `createdAt` datetime NOT NULL DEFAULT current_timestamp()
+  `createdAt` datetime NOT NULL DEFAULT current_timestamp(),
+  `status` enum('ongoing','completed','cancelled') NOT NULL DEFAULT 'ongoing'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Dumping data for table `projects`
 --
 
-INSERT INTO `projects` (`id`, `title`, `description`, `clientName`, `targetEndDate`, `pmId`, `createdAt`) VALUES
-(1, 'QTask Development', 'Default project for existing tasks', 'Sikrit', '2026-04-30', 7, '2026-04-19 11:53:14'),
-(2, 'Test Project 1', 'test data to simulate the separation of workloads', 'Atho pooo', '2026-05-01', 6, '2026-04-19 12:10:09'),
-(3, 'prajekk', 'brip diskripsyun', 'canzon qt', '2026-05-29', 6, '2026-04-24 15:36:03');
+INSERT INTO `projects` (`id`, `title`, `description`, `clientName`, `targetEndDate`, `pmId`, `createdAt`, `status`) VALUES
+(1, 'QTask Development', 'Default project for existing tasks', 'Sikrit', '2026-04-28', 7, '2026-04-19 11:53:14', 'ongoing'),
+(2, 'Test Project 1', 'test data to simulate the separation of workloads', 'Atho pooo', '2026-04-20', 6, '2026-04-19 12:10:09', 'completed'),
+(3, 'prajekk', 'brip diskripsyun', 'canzon qt', '2026-05-22', 6, '2026-04-24 15:36:03', 'ongoing'),
+(4, 'test 4', NULL, 'testting tao', '2026-04-25', 7, '2026-04-24 22:16:30', 'cancelled');
 
 -- --------------------------------------------------------
 
@@ -267,6 +297,7 @@ INSERT INTO `projects` (`id`, `title`, `description`, `clientName`, `targetEndDa
 CREATE TABLE `severities` (
   `id` int(11) NOT NULL,
   `label` varchar(100) NOT NULL,
+  `color` varchar(20) DEFAULT NULL,
   `sortOrder` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
@@ -274,13 +305,13 @@ CREATE TABLE `severities` (
 -- Dumping data for table `severities`
 --
 
-INSERT INTO `severities` (`id`, `label`, `sortOrder`) VALUES
-(1, '1 - Critical', 1),
-(2, '2 - High', 2),
-(3, '3 - Medium', 3),
-(4, '4 - Low', 4),
-(5, '5 - Cosmetic Fix', 5),
-(6, 'Nice to Have', 6);
+INSERT INTO `severities` (`id`, `label`, `color`, `sortOrder`) VALUES
+(1, '1 - Critical', '#ef4444', 1),
+(2, '2 - High', '#f97316', 2),
+(3, '3 - Medium', '#eab308', 3),
+(4, '4 - Low', '#22c55e', 4),
+(5, '5 - Cosmetic Fix', '#3b82f6', 5),
+(6, 'Nice to Have', '#8b5cf6', 6);
 
 -- --------------------------------------------------------
 
@@ -291,6 +322,7 @@ INSERT INTO `severities` (`id`, `label`, `sortOrder`) VALUES
 CREATE TABLE `statuses` (
   `id` int(11) NOT NULL,
   `label` varchar(100) NOT NULL,
+  `color` varchar(20) NOT NULL DEFAULT '#6b7280',
   `sortOrder` int(11) NOT NULL DEFAULT 0,
   `isDefault` tinyint(1) NOT NULL DEFAULT 0,
   `isFinal` tinyint(1) NOT NULL DEFAULT 0
@@ -300,15 +332,15 @@ CREATE TABLE `statuses` (
 -- Dumping data for table `statuses`
 --
 
-INSERT INTO `statuses` (`id`, `label`, `sortOrder`, `isDefault`, `isFinal`) VALUES
-(1, 'Not Started', 1, 1, 0),
-(2, 'Active', 2, 0, 0),
-(3, 'Blocked', 3, 0, 0),
-(4, 'Bug Fixing', 4, 0, 0),
-(5, 'Clarification Needed', 5, 0, 0),
-(6, 'For Verification', 6, 0, 0),
-(7, 'Failed', 7, 0, 0),
-(8, 'Passed', 8, 0, 1);
+INSERT INTO `statuses` (`id`, `label`, `color`, `sortOrder`, `isDefault`, `isFinal`) VALUES
+(1, 'Not Started', '#94a3b8', 1, 1, 0),
+(2, 'Active', '#3b82f6', 2, 0, 0),
+(3, 'Blocked', '#ef4444', 3, 0, 0),
+(4, 'Bug Fixing', '#f97316', 4, 0, 0),
+(5, 'Clarification Needed', '#f59e0b', 5, 0, 0),
+(6, 'For Verification', '#8b5cf6', 6, 0, 0),
+(7, 'Failed', '#dc2626', 7, 0, 0),
+(8, 'Passed', '#22c55e', 8, 0, 1);
 
 -- --------------------------------------------------------
 
@@ -361,14 +393,14 @@ CREATE TABLE `tasks` (
 
 INSERT INTO `tasks` (`id`, `projectId`, `title`, `description`, `statusId`, `phaseId`, `severityId`, `assigneeId`, `qaAssigneeId`, `targetDate`, `actualEndDate`, `progress`, `createdAt`, `updatedAt`) VALUES
 (1, 1, 'Design login page', 'Create Figma mockup and implement HTML/CSS.', 1, 6, 2, 3, 4, '2025-04-09', NULL, 0, '2026-04-18 14:45:08', '2026-04-24 18:21:08'),
-(2, 1, 'Write API docs', 'Document all Express routes via Postman.', 1, 3, 4, 5, 4, '2025-04-19', NULL, 0, '2026-04-18 14:45:08', '2026-04-24 17:30:46'),
+(2, 1, 'Write API docs', 'Document all Express routes via Postman.', 6, 3, 4, 5, 4, '2025-04-03', NULL, 0, '2026-04-18 14:45:08', '2026-04-25 12:16:06'),
 (3, 1, 'Build dashboard UI', 'Implement analytics dashboard with charts.', 2, 6, 2, 2, 4, '2025-04-14', NULL, 55, '2026-04-18 14:45:08', '2026-04-24 11:19:07'),
 (4, 1, 'Auth endpoints', 'Express JWT auth with bcrypt hashing.', 6, 7, 1, 4, 4, '2025-04-09', '2026-04-18', 100, '2026-04-18 14:45:08', '2026-04-24 10:58:15'),
 (5, 1, 'Project repo setup', 'Initialise GitHub repo and branch rules.', 8, 7, 3, 2, 4, '2025-03-31', NULL, 100, '2026-04-18 14:45:08', '2026-04-24 10:49:58'),
-(6, 1, 'Kanban Frontend', 'test data no. 1', 1, 5, 2, 3, 8, '2026-04-21', NULL, 0, '2026-04-19 11:29:17', '2026-04-24 11:32:17'),
-(7, 2, 'Backshot ugh', 'mwehehe', 1, 3, 2, 6, 8, '2026-04-28', NULL, 100, '2026-04-22 20:32:28', '2026-04-24 17:15:34'),
-(8, 2, 'blow work', 'dipindi', 1, 6, 3, 2, 8, '2026-04-22', NULL, 0, '2026-04-22 20:34:42', '2026-04-24 11:26:55'),
-(9, 2, 'pouble denetration', NULL, 1, 1, 3, 2, NULL, '2026-04-27', NULL, 0, '2026-04-24 17:16:23', '2026-04-24 17:16:39');
+(6, 1, 'Kanban Frontend', 'test data no. 1', 8, 8, 2, 3, 8, '2026-04-20', '2026-04-25', 100, '2026-04-19 11:29:17', '2026-04-25 12:16:53'),
+(7, 2, 'Backshot ugh', 'mwehehe', 1, 8, 2, 6, 8, '2026-04-28', '2026-04-24', 100, '2026-04-22 20:32:28', '2026-04-24 20:05:00'),
+(8, 2, 'blow work', 'dipindi', 1, 8, 3, 2, 8, '2026-04-22', '2026-04-24', 100, '2026-04-22 20:34:42', '2026-04-24 20:44:28'),
+(9, 2, 'pouble denetration', NULL, 1, 8, 3, 2, NULL, '2026-04-27', '2026-04-24', 100, '2026-04-24 17:16:23', '2026-04-24 20:44:31');
 
 -- --------------------------------------------------------
 
@@ -413,7 +445,8 @@ INSERT INTO `users` (`id`, `name`, `username`, `password`, `role`, `isActive`) V
 (5, 'Ben Torres', 'ben', '$2b$10$YuJ6Or8HNFOKs3w3elGep.4JPfegjkjPzEogdb86q.fz.z7hjilOS', 'Developer', 1),
 (6, 'Maria Lopez', 'maria', '$2b$10$YuJ6Or8HNFOKs3w3elGep.4JPfegjkjPzEogdb86q.fz.z7hjilOS', 'ProjectManager', 1),
 (7, 'Mark Yyu', 'markyyu', '$2b$10$bf2rKJo.iivVeXrMRo2gKu1SHI71ZL.Hf4n1M1xRnqPR6FcXdpjoO', 'ProjectManager', 1),
-(8, 'Qa 222', 'qa2', '$2b$10$Vl9kgVuc8G7MYgSkQwYXieZHuDy2nVJZmtKVOc.Weev7QVmsZJzei', 'QA', 1);
+(8, 'Qa 222', 'qa2', '$2b$10$Vl9kgVuc8G7MYgSkQwYXieZHuDy2nVJZmtKVOc.Weev7QVmsZJzei', 'QA', 1),
+(9, 'Juan Cruz', 'juan', '$2b$10$2jsj0oY8gkP30d42PNSyQ./gmI.pHUOKdxwk6G6CQoujHpJBPUSMC', 'Developer', 1);
 
 --
 -- Indexes for dumped tables
@@ -503,7 +536,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=140;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=168;
 
 --
 -- AUTO_INCREMENT for table `assessments`
@@ -515,25 +548,25 @@ ALTER TABLE `assessments`
 -- AUTO_INCREMENT for table `phases`
 --
 ALTER TABLE `phases`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `projects`
 --
 ALTER TABLE `projects`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `severities`
 --
 ALTER TABLE `severities`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `statuses`
 --
 ALTER TABLE `statuses`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `subtasks`
@@ -557,7 +590,7 @@ ALTER TABLE `task_attachments`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- Constraints for dumped tables

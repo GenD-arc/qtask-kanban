@@ -38,9 +38,17 @@ export const deletePhase  = (id)      => request("DELETE", `/phases/${id}`);
 // Status is a secondary attribute on a task (e.g. Open, For Verification).
 // It is shown in the task detail view but does not control the column.
 export const fetchStatuses = () => request("GET", "/statuses");
+export const createStatus = (payload) => request("POST", "/statuses", payload);
+export const updateStatus = (id, payload) =>
+  request("PUT", `/statuses/${id}`, payload);
+export const deleteStatus = (id) => request("DELETE", `/statuses/${id}`);
 
 // ── Severities ────────────────────────────────────────────────
-export const fetchSeverities = () => request("GET", "/severities");
+export const fetchSeverities   = ()            => request("GET",    "/severities");
+export const fetchSeverityById = (id)          => request("GET",    `/severities/${id}`); // ADD THIS
+export const createSeverity    = (payload)     => request("POST",   "/severities", payload);
+export const updateSeverity    = (id, payload) => request("PUT",    `/severities/${id}`, payload);
+export const deleteSeverity    = (id)          => request("DELETE", `/severities/${id}`);
 
 // ── Users ─────────────────────────────────────────────────────
 export const fetchUsers = () => request("GET", "/users");
@@ -62,8 +70,6 @@ export const fetchTasks = (projectId, assignedUserId, grouping) => {
 };
 
 // ── Tasks ─────────────────────────────────────────────────────
-//export const fetchTasks = () => request("GET", "/tasks");
-
 export const createTask = (payload) => request("POST", "/tasks", payload);
 
 // ── Activity Logs ─────────────────────────────────────────────
@@ -126,3 +132,31 @@ export const updateUser         = (id, payload)   => request("PUT",    `/users/$
 export const resetUserPassword  = (id, password)  => request("PATCH",  `/users/${id}/password`, { newPassword: password });
 export const toggleUserStatus   = (id, isActive)  => request("PATCH",  `/users/${id}/status`, { isActive });
 export const deleteUser         = (id)            => request("DELETE", `/users/${id}`);
+
+// ── Cache Helpers for Severity Colors (Optional Performance Boost) ──
+let severityCache = new Map();
+
+export const getSeverityColorWithCache = async (severityId) => {
+  if (severityCache.has(severityId)) {
+    return severityCache.get(severityId);
+  }
+  
+  try {
+    const severity = await fetchSeverityById(severityId);
+    const color = severity?.color || null;
+    severityCache.set(severityId, color);
+    return color;
+  } catch (error) {
+    console.error('Failed to fetch severity color:', error);
+    return null;
+  }
+};
+
+export const clearSeverityCache = () => {
+  severityCache.clear();
+};
+
+// Optional: Update cache when severities are modified
+export const updateSeverityCache = (severityId, color) => {
+  severityCache.set(severityId, color);
+};

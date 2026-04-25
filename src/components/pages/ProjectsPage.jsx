@@ -96,16 +96,19 @@ export default function ProjectsPage({ users }) {
   const handleAdd = useCallback(async (payload) => {
     const created = await createProject(payload);
     setProjects((prev) => [created, ...prev]);
+    window.dispatchEvent(new Event('projects-updated'));
   }, []);
 
   const handleEdit = useCallback(async (payload) => {
     const updated = await updateProject(editTarget.id, payload);
     setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    window.dispatchEvent(new Event('projects-updated')); 
   }, [editTarget]);
 
   const handleDelete = useCallback(async () => {
     await deleteProject(deleteTarget.id);
     setProjects((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+    window.dispatchEvent(new Event('projects-updated'));
   }, [deleteTarget]);
 
   const totalTasks   = projects.reduce((sum, p) => sum + (p.taskCount ?? 0), 0);
@@ -153,7 +156,7 @@ export default function ProjectsPage({ users }) {
 
         {/* KPI row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiCard label="Total Projects" value={projects.length} accent="#3b82f6" sub="in portfolio"           icon={FolderOpen}    />
+          <KpiCard label="Total Projects" value={projects.length} accent="#3b82f6" sub="in portfolio"          icon={FolderOpen}    />
           <KpiCard label="Total Tasks"    value={totalTasks}      accent="#10b981" sub="across all projects"    icon={CheckSquare}   />
           <KpiCard label="With Manager"   value={withPm}          accent="#8b5cf6" sub="projects assigned a PM" icon={Users}         />
           <KpiCard label="Have Deadline"  value={withDeadline}    accent="#f59e0b" sub="target end date set"    icon={CalendarClock} />
@@ -174,7 +177,8 @@ export default function ProjectsPage({ users }) {
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    {["Title", "Client", "Description", "Project Manager", "Target End Date", "Tasks", "Created", "Actions"].map((col) => (
+                    {/* Added Status to the headers */}
+                    {["Title", "Status", "Client", "Project Manager", "Target End Date", "Tasks", "Created", "Actions"].map((col) => (
                       <th
                         key={col}
                         className="text-left px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap"
@@ -195,17 +199,25 @@ export default function ProjectsPage({ users }) {
                         <p className="font-semibold text-slate-800 truncate">{project.title}</p>
                       </td>
 
+                      {/* New Status Data Cell */}
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <span
+                          className="text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
+                          style={{
+                            background: project.status === 'completed' ? "#ecfdf5" : project.status === 'cancelled' ? "#fef2f2" : "#eff6ff",
+                            color: project.status === 'completed' ? "#059669" : project.status === 'cancelled' ? "#ef4444" : "#3b82f6",
+                            border: `1px solid ${project.status === 'completed' ? "#05966930" : project.status === 'cancelled' ? "#ef444430" : "#3b82f630"}`
+                          }}
+                        >
+                          {project.status || 'ongoing'}
+                        </span>
+                      </td>
+
                       <td className="px-5 py-3.5 max-w-[160px]">
                         {project.clientName
                           ? <p className="text-slate-600 truncate text-xs">{project.clientName}</p>
                           : <span className="text-slate-300 italic text-xs">—</span>
                         }
-                      </td>
-
-                      <td className="px-5 py-3.5 max-w-[200px]">
-                        <p className="text-slate-400 truncate text-xs">
-                          {project.description || <span className="italic">No description</span>}
-                        </p>
                       </td>
 
                       <td className="px-5 py-3.5 whitespace-nowrap">

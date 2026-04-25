@@ -2,10 +2,11 @@ const express = require("express");
 const router  = express.Router();
 const pool    = require("../config/db");
 
+// ── Helper ────────────────────────────────────────────────────
 async function getProjectById(id) {
   const [rows] = await pool.query(
     `SELECT
-       p.id, p.title, p.description, p.clientName, p.targetEndDate, p.createdAt,
+       p.id, p.title, p.description, p.clientName, p.targetEndDate, p.status, p.createdAt,
        p.pmId, u.name AS pmName, u.username AS pmUsername
      FROM projects p
      LEFT JOIN users u ON p.pmId = u.id
@@ -29,7 +30,7 @@ router.get("/", async (req, res) => {
 
     const [rows] = await pool.query(
       `SELECT
-         p.id, p.title, p.description, p.clientName, p.targetEndDate, p.createdAt,
+         p.id, p.title, p.description, p.clientName, p.targetEndDate, p.status, p.createdAt,
          p.pmId, u.name AS pmName, u.username AS pmUsername,
          COUNT(t.id) AS taskCount
        FROM projects p
@@ -49,15 +50,17 @@ router.get("/", async (req, res) => {
 
 // ── POST /api/projects ────────────────────────────────────────
 router.post("/", async (req, res) => {
-  const { title, description, pmId, clientName, targetEndDate } = req.body;
+  // Added status to destructuring
+  const { title, description, pmId, clientName, targetEndDate, status } = req.body;
 
   if (!title?.trim())
     return res.status(400).json({ message: "Title is required" });
 
   try {
+    // Added status to INSERT query and values array
     const [result] = await pool.query(
-      "INSERT INTO projects (title, description, pmId, clientName, targetEndDate) VALUES (?, ?, ?, ?, ?)",
-      [title.trim(), description ?? null, pmId ?? null, clientName ?? null, targetEndDate ?? null]
+      "INSERT INTO projects (title, description, pmId, clientName, targetEndDate, status) VALUES (?, ?, ?, ?, ?, ?)",
+      [title.trim(), description ?? null, pmId ?? null, clientName ?? null, targetEndDate ?? null, status ?? 'ongoing']
     );
     const project = await getProjectById(result.insertId);
     res.status(201).json(project);
@@ -72,15 +75,17 @@ router.post("/", async (req, res) => {
 // ── PUT /api/projects/:id ─────────────────────────────────────
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
-  const { title, description, pmId, clientName, targetEndDate } = req.body;
+  // Added status to destructuring
+  const { title, description, pmId, clientName, targetEndDate, status } = req.body;
 
   if (!title?.trim())
     return res.status(400).json({ message: "Title is required" });
 
   try {
+    // Added status to UPDATE query and values array
     await pool.query(
-      "UPDATE projects SET title = ?, description = ?, pmId = ?, clientName = ?, targetEndDate = ? WHERE id = ?",
-      [title.trim(), description ?? null, pmId ?? null, clientName ?? null, targetEndDate ?? null, id]
+      "UPDATE projects SET title = ?, description = ?, pmId = ?, clientName = ?, targetEndDate = ?, status = ? WHERE id = ?",
+      [title.trim(), description ?? null, pmId ?? null, clientName ?? null, targetEndDate ?? null, status ?? 'ongoing', id]
     );
     const project = await getProjectById(id);
     if (!project)
