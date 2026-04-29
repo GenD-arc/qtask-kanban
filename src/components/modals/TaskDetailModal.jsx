@@ -336,6 +336,17 @@ export default function TaskDetailModal({
                 )}
               </div>
 
+              {task.mandays != null && (
+  <div className="space-y-0.5">
+    <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+      Mandays
+    </p>
+    <p className="text-sm text-gray-700">
+      {task.mandays} day{task.mandays !== 1 ? "s" : ""}
+    </p>
+  </div>
+)}
+
               {task.actualEndDate && (
                 <div className="space-y-0.5">
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
