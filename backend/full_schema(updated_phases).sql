@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 25, 2026 at 09:05 AM
+-- Generation Time: May 04, 2026 at 06:08 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.1.25
 
@@ -31,7 +31,7 @@ CREATE TABLE `activity_logs` (
   `id` int(11) NOT NULL,
   `taskId` int(11) NOT NULL,
   `userId` int(11) DEFAULT NULL,
-  `action` text NOT NULL,
+  `action` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `createdAt` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
@@ -81,7 +81,7 @@ INSERT INTO `activity_logs` (`id`, `taskId`, `userId`, `action`, `createdAt`) VA
 (39, 4, 6, 'Phase changed from \"Deployed (Go-Live)\" to \"For Review (Dev Done)\"', '2026-04-18 18:48:57'),
 (40, 4, 6, 'Phase changed from \"For Review (Dev Done)\" to \"Deployed (Go-Live)\"', '2026-04-18 18:49:18'),
 (41, 4, 6, 'Task details updated', '2026-04-18 18:49:36'),
-(42, 4, 4, 'Phase changed from \"Deployed (Go-Live)\" to \"Completed\" — Actual End Date: 2026-04-18', '2026-04-18 18:50:10'),
+(42, 4, 4, 'Phase changed from \"Deployed (Go-Live)\" to \"Completed\" ? Actual End Date: 2026-04-18', '2026-04-18 18:50:10'),
 (43, 4, 4, 'Phase changed from \"Completed\" to \"Deployed (Go-Live)\"', '2026-04-18 18:50:13'),
 (44, 6, 6, 'Task created', '2026-04-19 11:29:17'),
 (45, 6, 6, 'Phase changed from \"Backlog (Requirements)\" to \"To Do (Ready for Dev)\"', '2026-04-19 11:29:38'),
@@ -96,12 +96,6 @@ INSERT INTO `activity_logs` (`id`, `taskId`, `userId`, `action`, `createdAt`) VA
 (54, 4, 1, 'Phase changed from \"In Progress\" to \"Deployed (Go-Live)\"', '2026-04-19 12:47:47'),
 (55, 5, 1, 'Phase changed from \"In Progress\" to \"Deployed (Go-Live)\"', '2026-04-19 12:47:49'),
 (56, 3, 1, 'Phase changed from \"In Progress\" to \"To Do (Ready for Dev)\"', '2026-04-19 12:47:53'),
-(57, 7, 1, 'Task created', '2026-04-22 20:32:28'),
-(58, 7, 1, 'Task details updated', '2026-04-22 20:33:25'),
-(59, 8, 6, 'Task created', '2026-04-22 20:34:42'),
-(60, 8, 6, 'Phase changed from \"Backlog (Requirements)\" to \"To Do (Ready for Dev)\"', '2026-04-22 20:34:46'),
-(61, 7, 6, 'Phase changed from \"Backlog (Requirements)\" to \"To Do (Ready for Dev)\"', '2026-04-22 20:34:48'),
-(62, 8, 6, 'Task details updated', '2026-04-22 20:35:13'),
 (63, 3, 2, 'Phase changed from \"To Do (Ready for Dev)\" to \"In Progress\"', '2026-04-22 20:35:49'),
 (64, 4, 7, 'Task details updated', '2026-04-24 10:49:46'),
 (65, 5, 7, 'Task details updated', '2026-04-24 10:49:58'),
@@ -136,28 +130,13 @@ INSERT INTO `activity_logs` (`id`, `taskId`, `userId`, `action`, `createdAt`) VA
 (94, 3, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:59:21'),
 (95, 2, 7, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 10:59:28'),
 (96, 2, 7, 'Task details updated', '2026-04-24 10:59:38'),
-(97, 7, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"QA Execution\"', '2026-04-24 11:02:08'),
-(98, 7, 1, 'Phase changed from \"QA Execution\" to \"To Do (Ready for Dev)\"', '2026-04-24 11:02:11'),
-(99, 7, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"QA Execution\"', '2026-04-24 11:08:05'),
-(100, 7, 1, 'Phase changed from \"QA Execution\" to \"To Do (Ready for Dev)\"', '2026-04-24 11:08:24'),
 (101, 1, 1, 'QA assignee changed from \"Unassigned\" to \"Dana Cruz\"', '2026-04-24 11:10:14'),
-(102, 8, 1, 'QA assignee changed from \"Unassigned\" to \"Qa 2\"', '2026-04-24 11:17:46'),
-(103, 7, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"QA Execution\"', '2026-04-24 11:26:01'),
-(104, 7, 1, 'Phase changed from \"QA Execution\" to \"To Do (Ready for Dev)\"', '2026-04-24 11:26:07'),
-(105, 8, 8, 'Phase changed from \"Client Review - UAT\" to \"QA Execution\"', '2026-04-24 11:26:17'),
-(106, 8, 8, 'Phase changed from \"QA Execution\" to \"Client Review - UAT\"', '2026-04-24 11:26:25'),
-(107, 8, 8, 'Phase changed from \"Client Review - UAT\" to \"QA Execution\"', '2026-04-24 11:26:28'),
 (108, 6, 3, 'Phase changed from \"In Progress\" to \"To Do (Ready for Dev)\"', '2026-04-24 11:27:44'),
 (109, 6, 3, 'Phase changed from \"To Do (Ready for Dev)\" to \"Backlog (Requirements)\"', '2026-04-24 11:27:48'),
-(110, 7, 1, 'QA assignee changed from \"Unassigned\" to \"Qa 2\"', '2026-04-24 11:31:03'),
 (111, 6, 1, 'Phase changed from \"Backlog (Requirements)\" to \"Client Review - UAT\"', '2026-04-24 11:32:04'),
 (112, 6, 1, 'QA assignee changed from \"Unassigned\" to \"Qa 2\"', '2026-04-24 11:32:17'),
-(113, 7, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"For Review (Dev Done)\"', '2026-04-24 15:19:20'),
-(114, 7, 1, 'Phase changed from \"For Review (Dev Done)\" to \"In Progress\"', '2026-04-24 15:19:29'),
 (115, 1, 1, 'Phase changed from \"QA Execution\" to \"In Progress\"', '2026-04-24 16:08:54'),
 (116, 1, 1, 'Phase changed from \"In Progress\" to \"QA Execution\"', '2026-04-24 16:09:01'),
-(117, 7, 1, 'Phase changed from \"In Progress\" to \"Deployed (Go-Live)\"', '2026-04-24 17:15:32'),
-(118, 7, 1, 'Phase changed from \"Deployed (Go-Live)\" to \"In Progress\"', '2026-04-24 17:15:34'),
 (119, 9, 1, 'Task created', '2026-04-24 17:16:23'),
 (120, 9, 1, 'Phase changed from \"Backlog (Requirements)\" to \"QA Execution\"', '2026-04-24 17:16:28'),
 (121, 9, 1, 'Phase changed from \"QA Execution\" to \"Backlog (Requirements)\"', '2026-04-24 17:16:31'),
@@ -182,12 +161,8 @@ INSERT INTO `activity_logs` (`id`, `taskId`, `userId`, `action`, `createdAt`) VA
 (140, 2, 1, 'Severity changed from \"4 - Low\" to \"5 - Cosmetic Fix\"', '2026-04-24 19:32:31'),
 (141, 9, 1, 'Phase changed from \"Backlog (Requirements)\" to \"aa\"', '2026-04-24 19:44:44'),
 (142, 9, 1, 'Phase changed from \"aa\" to \"Backlog (Requirements)\"', '2026-04-24 19:45:26'),
-(143, 7, 1, 'Phase changed from \"In Progress\" to \"Completed\" — Actual End Date: 2026-04-24', '2026-04-24 20:04:30'),
-(144, 7, 1, 'Phase changed from \"Completed\" to \"In Progress\"', '2026-04-24 20:04:35'),
-(145, 7, 1, 'Phase changed from \"In Progress\" to \"Completed\" — Actual End Date: 2026-04-24', '2026-04-24 20:05:00'),
-(146, 8, 1, 'Phase changed from \"QA Execution\" to \"Completed\" — Actual End Date: 2026-04-24', '2026-04-24 20:44:28'),
-(147, 9, 1, 'Phase changed from \"Backlog (Requirements)\" to \"Completed\" — Actual End Date: 2026-04-24', '2026-04-24 20:44:31'),
-(148, 6, 1, 'Phase changed from \"Client Review - UAT\" to \"Completed\" — Actual End Date: 2026-04-25', '2026-04-25 11:38:57'),
+(147, 9, 1, 'Phase changed from \"Backlog (Requirements)\" to \"Completed\" ? Actual End Date: 2026-04-24', '2026-04-24 20:44:31'),
+(148, 6, 1, 'Phase changed from \"Client Review - UAT\" to \"Completed\" ? Actual End Date: 2026-04-25', '2026-04-25 11:38:57'),
 (149, 2, 5, 'Phase changed from \"In Progress\" to \"To Do (Ready for Dev)\"', '2026-04-25 11:53:45'),
 (150, 2, 5, 'Phase changed from \"To Do (Ready for Dev)\" to \"In Progress\"', '2026-04-25 11:53:51'),
 (151, 2, 5, 'Status changed from \"Not Started\" to \"Active\"', '2026-04-25 11:54:08'),
@@ -202,29 +177,49 @@ INSERT INTO `activity_logs` (`id`, `taskId`, `userId`, `action`, `createdAt`) VA
 (160, 2, 5, 'Status changed from \"Bug Fixing\" to \"For Verification\"', '2026-04-25 12:10:24'),
 (161, 2, 5, 'Severity changed from \"3 - Medium\" to \"4 - Low\"', '2026-04-25 12:10:33'),
 (162, 2, 5, 'Status changed from \"For Verification\" to \"Bug Fixing\"', '2026-04-25 12:13:42'),
-(163, 2, 5, 'Status changed from \"Bug Fixing\" to \"Active\" · Severity changed from \"4 - Low\" to \"5 - Cosmetic Fix\"', '2026-04-25 12:14:40'),
-(164, 2, 5, 'Status changed from \"Active\" to \"Clarification Needed\" · Severity changed from \"5 - Cosmetic Fix\" to \"4 - Low\"', '2026-04-25 12:15:03'),
-(165, 2, 5, 'Status changed from \"Clarification Needed\" to \"Blocked\" · Severity changed from \"4 - Low\" to \"3 - Medium\"', '2026-04-25 12:15:20'),
-(166, 2, 5, 'Status changed from \"Blocked\" to \"For Verification\" · Severity changed from \"3 - Medium\" to \"4 - Low\"', '2026-04-25 12:16:06'),
+(163, 2, 5, 'Status changed from \"Bug Fixing\" to \"Active\" ? Severity changed from \"4 - Low\" to \"5 - Cosmetic Fix\"', '2026-04-25 12:14:40'),
+(164, 2, 5, 'Status changed from \"Active\" to \"Clarification Needed\" ? Severity changed from \"5 - Cosmetic Fix\" to \"4 - Low\"', '2026-04-25 12:15:03'),
+(165, 2, 5, 'Status changed from \"Clarification Needed\" to \"Blocked\" ? Severity changed from \"4 - Low\" to \"3 - Medium\"', '2026-04-25 12:15:20'),
+(166, 2, 5, 'Status changed from \"Blocked\" to \"For Verification\" ? Severity changed from \"3 - Medium\" to \"4 - Low\"', '2026-04-25 12:16:06'),
 (167, 6, 4, 'Status changed from \"Not Started\" to \"Passed\"', '2026-04-25 12:16:53'),
-(168, 7, 1, 'Phase changed from \"Completed\" to \"For Review (Dev Done)\"', '2026-04-25 12:42:57'),
-(169, 7, 1, 'Phase changed from \"For Review (Dev Done)\" to \"In Progress\"', '2026-04-25 12:42:59'),
-(170, 7, 1, 'Phase changed from \"In Progress\" to \"Completed\" — Actual End Date: 2026-04-25', '2026-04-25 12:43:10'),
 (171, 10, 1, 'Task created', '2026-04-25 13:22:18'),
 (176, 10, 1, 'Phase changed from \"Backlog (Requirements)\" to \"To Do (Ready for Dev)\"', '2026-04-25 13:22:25'),
-(177, 10, 1, 'Dev assignee changed from \"Unassigned\" to \"Juan Cruz\" · QA assignee changed from \"Unassigned\" to \"Unassigned\" · Severity changed from \"None\" to \"None\"', '2026-04-25 13:36:20'),
+(177, 10, 1, 'Dev assignee changed from \"Unassigned\" to \"Juan Cruz\" ? QA assignee changed from \"Unassigned\" to \"Unassigned\" ? Severity changed from \"None\" to \"None\"', '2026-04-25 13:36:20'),
 (178, 10, 9, 'Phase changed from \"To Do (Ready for Dev)\" to \"Backlog (Requirements)\"', '2026-04-25 13:36:23'),
 (179, 10, 9, 'Phase changed from \"Backlog (Requirements)\" to \"To Do (Ready for Dev)\"', '2026-04-25 13:37:05'),
-(180, 10, 1, 'QA assignee changed from \"Unassigned\" to \"Dana Cruz\" · Status changed from \"Not Started\" to \"Active\" · Severity changed from \"None\" to \"2 - High\"', '2026-04-25 13:37:58'),
+(180, 10, 1, 'QA assignee changed from \"Unassigned\" to \"Dana Cruz\" ? Status changed from \"Not Started\" to \"Active\" ? Severity changed from \"None\" to \"2 - High\"', '2026-04-25 13:37:58'),
 (181, 10, 9, 'Phase changed from \"To Do (Ready for Dev)\" to \"In Progress\"', '2026-04-25 13:38:13'),
 (182, 10, 9, 'Phase changed from \"In Progress\" to \"test2\"', '2026-04-25 13:38:14'),
 (183, 10, 9, 'Phase changed from \"test2\" to \"To Do (Ready for Dev)\"', '2026-04-25 13:38:15'),
-(184, 10, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"For Review (Dev Done)\" — Actual End Date: 2026-04-25', '2026-04-25 14:11:55'),
-(185, 4, 1, 'Phase changed from \"Deployed (Go-Live)\" to \"For Review (Dev Done)\" — Actual End Date: 2026-04-25', '2026-04-25 14:13:59'),
+(184, 10, 1, 'Phase changed from \"To Do (Ready for Dev)\" to \"For Review (Dev Done)\" ? Actual End Date: 2026-04-25', '2026-04-25 14:11:55'),
+(185, 4, 1, 'Phase changed from \"Deployed (Go-Live)\" to \"For Review (Dev Done)\" ? Actual End Date: 2026-04-25', '2026-04-25 14:13:59'),
 (186, 10, 1, 'Phase changed from \"For Review (Dev Done)\" to \"In Progress\"', '2026-04-25 14:15:42'),
-(187, 10, 1, 'Phase changed from \"In Progress\" to \"For Review (Dev Done)\" — Actual End Date: 2026-04-25', '2026-04-25 14:15:46'),
+(187, 10, 1, 'Phase changed from \"In Progress\" to \"For Review (Dev Done)\" ? Actual End Date: 2026-04-25', '2026-04-25 14:15:46'),
 (188, 10, 1, 'Phase changed from \"? To Do (Ready for Dev)\" to \"?QA Execution\"', '2026-04-25 14:52:04'),
-(189, 10, 1, 'Phase changed from \"?QA Execution\" to \"? In Progress\"', '2026-04-25 14:52:05');
+(189, 10, 1, 'Phase changed from \"?QA Execution\" to \"? In Progress\"', '2026-04-25 14:52:05'),
+(190, 10, 1, 'Phase changed from \"? In Progress\" to \"? For Deployment\" ? Actual End Date: 2026-04-27', '2026-04-27 14:04:47'),
+(191, 10, 1, 'Phase changed from \"? For Deployment\" to \"? Backlog\"', '2026-04-27 14:04:51'),
+(192, 10, 1, 'Phase changed from \"? Backlog\" to \"? For Deployment\" ? Actual End Date: 2026-04-27', '2026-04-27 14:04:55'),
+(205, 9, 1, 'Phase changed from \"?Blocked\" to \"? In Progress\"', '2026-04-27 14:07:16'),
+(206, 9, 1, 'Phase changed from \"? In Progress\" to \"? For Deployment\" ? Actual End Date: 2026-04-27', '2026-04-27 14:07:36'),
+(207, 10, 1, 'Phase changed from \"? For Deployment\" to \"? Backlog\"', '2026-04-27 14:12:52'),
+(208, 10, 1, 'Phase changed from \"? Backlog\" to \"? For Deployment\" ? Actual End Date: 2026-04-27', '2026-04-27 14:12:54'),
+(209, 10, 1, 'Phase changed from \"? For Deployment\" to \"? Backlog\"', '2026-04-27 14:13:03'),
+(210, 10, 1, 'Phase changed from \"? Backlog\" to \"? For Deployment\" ? Actual End Date: 2026-04-27', '2026-04-27 14:13:06'),
+(211, 10, 1, 'Phase changed from \"? For Deployment\" to \"? Backlog\"', '2026-04-27 14:14:22'),
+(212, 10, 1, 'Phase changed from \"? Backlog\" to \"? For Deployment\" ? Actual End Date: 2026-04-27', '2026-04-27 14:14:29'),
+(213, 10, 1, 'Phase changed from \"? For Deployment\" to \"?Not a Defect\"', '2026-05-02 13:46:02'),
+(214, 10, 1, 'Phase changed from \"?Not a Defect\" to \"? For Deployment\" ? Actual End Date: 2026-05-02', '2026-05-02 13:46:04'),
+(215, 10, 1, 'Phase changed from \"? For Deployment\" to \"? Today\'s Focus\"', '2026-05-04 08:41:20'),
+(216, 10, 1, 'Status changed from \"Active\" to \"Not Started\"', '2026-05-04 08:41:45'),
+(217, 10, 1, 'Phase changed from \"? Today\'s Focus\" to \"? For Deployment\" ? Actual End Date: 2026-05-04', '2026-05-04 08:53:54'),
+(218, 10, 1, 'Phase changed from \"? For Deployment\" to \"? Today\'s Focus\"', '2026-05-04 08:53:59'),
+(219, 10, 1, 'Phase changed from \"? Today\'s Focus\" to \"? For Deployment\" ? Actual End Date: 2026-05-04', '2026-05-04 08:54:01'),
+(224, 16, 1, 'Task created', '2026-05-04 09:00:52'),
+(225, 16, 1, 'Dev assignee changed from \"Unassigned\" to \"Admin User\" ? QA assignee changed from \"Unassigned\" to \"Dana Cruz\" ? Status changed from \"Not Started\" to \"Active\" ? Severity changed from \"None\" to \"1 - Critical\"', '2026-05-04 09:08:37'),
+(226, 10, 1, 'Phase changed from \"? For Deployment\" to \"? Today\'s Focus\"', '2026-05-04 10:20:03'),
+(227, 10, 1, 'Phase changed from \"🔥 Today\'s Focus\" to \"👀  For Review (Dev Done)\"', '2026-05-04 11:53:19'),
+(228, 10, 1, 'Phase changed from \"👀  For Review (Dev Done)\" to \"🔥 Today\'s Focus\"', '2026-05-04 11:53:20');
 
 -- --------------------------------------------------------
 
@@ -309,8 +304,20 @@ CREATE TABLE `projects` (
 INSERT INTO `projects` (`id`, `title`, `description`, `clientName`, `targetEndDate`, `pmId`, `createdAt`, `status`) VALUES
 (1, 'QTask Development', 'Default project for existing tasks', 'Sikrit', '2026-04-28', 7, '2026-04-19 11:53:14', 'ongoing'),
 (2, 'Test Project 1', 'test data to simulate the separation of workloads', 'Atho pooo', '2026-04-20', 6, '2026-04-19 12:10:09', 'completed'),
-(3, 'prajekk', 'brip diskripsyun', 'canzon qt', '2026-05-22', 6, '2026-04-24 15:36:03', 'ongoing'),
-(4, 'test 4', NULL, 'testting tao', '2026-04-25', 7, '2026-04-24 22:16:30', 'cancelled');
+(3, 'prajekk', 'brip diskripsyun', 'canzon qt', '2026-05-22', 6, '2026-04-24 15:36:03', 'ongoing');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `project_users`
+--
+
+CREATE TABLE `project_users` (
+  `id` int(11) NOT NULL,
+  `project_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `role` enum('Developer','QA') NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -384,9 +391,24 @@ CREATE TABLE `subtasks` (
 --
 
 INSERT INTO `subtasks` (`id`, `taskId`, `title`, `isDone`) VALUES
-(46, 8, '1', 0),
-(47, 8, '2', 0),
-(48, 7, 'subtask 1', 1);
+(482, 9, 'test', 1),
+(531, 16, 'test', 1),
+(532, 16, '2', 0),
+(533, 16, 'tesrt3', 0),
+(536, 10, 'test subtask', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `subtask_comment`
+--
+
+CREATE TABLE `subtask_comment` (
+  `comment_id` int(11) NOT NULL,
+  `user_id_comment` int(11) NOT NULL,
+  `comment` text DEFAULT NULL,
+  `comment_date` date NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -408,24 +430,25 @@ CREATE TABLE `tasks` (
   `actualEndDate` date DEFAULT NULL,
   `progress` int(11) NOT NULL DEFAULT 0,
   `createdAt` datetime NOT NULL DEFAULT current_timestamp(),
-  `updatedAt` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updatedAt` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `variance` int(11) DEFAULT NULL,
+  `mandays` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Dumping data for table `tasks`
 --
 
-INSERT INTO `tasks` (`id`, `projectId`, `title`, `description`, `statusId`, `phaseId`, `severityId`, `assigneeId`, `qaAssigneeId`, `targetDate`, `actualEndDate`, `progress`, `createdAt`, `updatedAt`) VALUES
-(1, 1, 'Design login page', 'Create Figma mockup and implement HTML/CSS.', 1, 6, 2, 3, 4, '2025-04-09', NULL, 0, '2026-04-18 14:45:08', '2026-04-24 18:21:08'),
-(2, 1, 'Write API docs', 'Document all Express routes via Postman.', 6, 3, 4, 5, 4, '2025-04-03', NULL, 0, '2026-04-18 14:45:08', '2026-04-25 12:16:06'),
-(3, 1, 'Build dashboard UI', 'Implement analytics dashboard with charts.', 2, 6, 2, 2, 4, '2025-04-14', NULL, 55, '2026-04-18 14:45:08', '2026-04-24 11:19:07'),
-(4, 1, 'Auth endpoints', 'Express JWT auth with bcrypt hashing.', 6, 4, 1, 4, 4, '2025-04-09', '2026-04-25', 100, '2026-04-18 14:45:08', '2026-04-25 14:13:59'),
-(5, 1, 'Project repo setup', 'Initialise GitHub repo and branch rules.', 8, 7, 3, 2, 4, '2025-03-31', NULL, 100, '2026-04-18 14:45:08', '2026-04-24 10:49:58'),
-(6, 1, 'Kanban Frontend', 'test data no. 1', 8, 8, 2, 3, 8, '2026-04-20', '2026-04-25', 100, '2026-04-19 11:29:17', '2026-04-25 12:16:53'),
-(7, 2, 'Backshot ugh', 'mwehehe', 1, 8, 2, 6, 8, '2026-04-28', '2026-04-25', 100, '2026-04-22 20:32:28', '2026-04-25 12:43:10'),
-(8, 2, 'blow work', 'dipindi', 1, 8, 3, 2, 8, '2026-04-22', '2026-04-24', 100, '2026-04-22 20:34:42', '2026-04-24 20:44:28'),
-(9, 2, 'pouble denetration', NULL, 1, 8, 3, 2, NULL, '2026-04-27', '2026-04-24', 100, '2026-04-24 17:16:23', '2026-04-24 20:44:31'),
-(10, 3, 'tetest', NULL, 2, 2, 2, 9, 4, '2026-04-30', '2026-04-25', 100, '2026-04-25 13:22:18', '2026-04-25 14:52:05');
+INSERT INTO `tasks` (`id`, `projectId`, `title`, `description`, `statusId`, `phaseId`, `severityId`, `assigneeId`, `qaAssigneeId`, `targetDate`, `actualEndDate`, `progress`, `createdAt`, `updatedAt`, `variance`, `mandays`) VALUES
+(1, 1, 'Design login page', 'Create Figma mockup and implement HTML/CSS.', 1, 6, 2, 3, 4, '2025-04-09', NULL, 0, '2026-04-18 14:45:08', '2026-04-24 18:21:08', NULL, 0),
+(2, 1, 'Write API docs', 'Document all Express routes via Postman.', 6, 3, 4, 5, 4, '2025-04-03', NULL, 0, '2026-04-18 14:45:08', '2026-04-25 12:16:06', NULL, 0),
+(3, 1, 'Build dashboard UI', 'Implement analytics dashboard with charts.', 2, 6, 2, 2, 4, '2025-04-14', NULL, 55, '2026-04-18 14:45:08', '2026-04-24 11:19:07', NULL, 0),
+(4, 1, 'Auth endpoints', 'Express JWT auth with bcrypt hashing.', 6, 4, 1, 4, 4, '2025-04-09', '2026-04-25', 100, '2026-04-18 14:45:08', '2026-04-25 14:13:59', NULL, 0),
+(5, 1, 'Project repo setup', 'Initialise GitHub repo and branch rules.', 8, 7, 3, 2, 4, '2025-03-31', NULL, 100, '2026-04-18 14:45:08', '2026-04-24 10:49:58', NULL, 0),
+(6, 1, 'Kanban Frontend', 'test data no. 1', 8, 8, 2, 3, 8, '2026-04-20', '2026-04-25', 100, '2026-04-19 11:29:17', '2026-04-25 12:16:53', NULL, 0),
+(9, 2, 'pouble denetration', NULL, 1, 34, 3, 2, NULL, '2026-04-27', '2026-04-27', 100, '2026-04-24 17:16:23', '2026-05-04 09:40:42', NULL, 0),
+(10, 3, 'tetest', NULL, 1, 1, 2, 9, 4, '2026-04-29', '2026-05-04', 0, '2026-04-25 13:22:18', '2026-05-04 11:53:20', 2, 0),
+(16, 3, 'test', NULL, 2, 2, 1, 1, 4, '2026-05-14', NULL, 33, '2026-05-04 09:00:52', '2026-05-04 10:19:59', NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -507,6 +530,14 @@ ALTER TABLE `projects`
   ADD KEY `fk_project_pm` (`pmId`);
 
 --
+-- Indexes for table `project_users`
+--
+ALTER TABLE `project_users`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `project_id` (`project_id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
 -- Indexes for table `severities`
 --
 ALTER TABLE `severities`
@@ -526,6 +557,12 @@ ALTER TABLE `statuses`
 ALTER TABLE `subtasks`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_subtask_task` (`taskId`);
+
+--
+-- Indexes for table `subtask_comment`
+--
+ALTER TABLE `subtask_comment`
+  ADD PRIMARY KEY (`comment_id`);
 
 --
 -- Indexes for table `tasks`
@@ -561,7 +598,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=190;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=229;
 
 --
 -- AUTO_INCREMENT for table `assessments`
@@ -579,7 +616,13 @@ ALTER TABLE `phases`
 -- AUTO_INCREMENT for table `projects`
 --
 ALTER TABLE `projects`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `project_users`
+--
+ALTER TABLE `project_users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `severities`
@@ -597,13 +640,19 @@ ALTER TABLE `statuses`
 -- AUTO_INCREMENT for table `subtasks`
 --
 ALTER TABLE `subtasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=542;
+
+--
+-- AUTO_INCREMENT for table `subtask_comment`
+--
+ALTER TABLE `subtask_comment`
+  MODIFY `comment_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tasks`
 --
 ALTER TABLE `tasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `task_attachments`
@@ -632,6 +681,13 @@ ALTER TABLE `activity_logs`
 --
 ALTER TABLE `projects`
   ADD CONSTRAINT `fk_project_pm` FOREIGN KEY (`pmId`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `project_users`
+--
+ALTER TABLE `project_users`
+  ADD CONSTRAINT `project_users_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `project_users_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `subtasks`
