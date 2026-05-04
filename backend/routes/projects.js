@@ -1,6 +1,6 @@
 const express = require("express");
-const router  = express.Router();
-const pool    = require("../config/db");
+const router = express.Router();
+const pool = require("../config/db");
 
 // ── Helper ────────────────────────────────────────────────────
 async function getProjectById(id) {
@@ -11,18 +11,20 @@ async function getProjectById(id) {
      FROM projects p
      LEFT JOIN users u ON p.pmId = u.id
      WHERE p.id = ?`,
-    [id]
+    [id],
   );
   return rows[0] ?? null;
 }
 
 // ── GET /api/projects ─────────────────────────────────────────
 router.get("/", async (req, res) => {
-  const userId = req.headers["x-user-id"] ? Number(req.headers["x-user-id"]) : null;
-  const role   = req.headers["x-user-role"] ?? null;
+  const userId = req.headers["x-user-id"]
+    ? Number(req.headers["x-user-id"])
+    : null;
+  const role = req.headers["x-user-role"] ?? null;
 
   try {
-    const isPM    = role === "ProjectManager";
+    const isPM = role === "ProjectManager";
     const isAdmin = role === "Admin";
 
     if (!isPM && !isAdmin)
@@ -39,7 +41,7 @@ router.get("/", async (req, res) => {
        ${isPM ? "WHERE p.pmId = ?" : ""}
        GROUP BY p.id
        ORDER BY p.createdAt DESC`,
-      isPM ? [userId] : []
+      isPM ? [userId] : [],
     );
     res.json(rows);
   } catch (err) {
@@ -49,34 +51,110 @@ router.get("/", async (req, res) => {
 });
 
 // ── POST /api/projects ────────────────────────────────────────
-router.post("/", async (req, res) => {
-  // Added status to destructuring
-  const { title, description, pmId, clientName, targetEndDate, status } = req.body;
+// routes/projects.js
 
-  if (!title?.trim())
-    return res.status(400).json({ message: "Title is required" });
+router.post("/", async (req, res) => {
+  const conn = await pool.getConnection();
 
   try {
-    // Added status to INSERT query and values array
-    const [result] = await pool.query(
-      "INSERT INTO projects (title, description, pmId, clientName, targetEndDate, status) VALUES (?, ?, ?, ?, ?, ?)",
-      [title.trim(), description ?? null, pmId ?? null, clientName ?? null, targetEndDate ?? null, status ?? 'ongoing']
+    const {
+      title,
+      description,
+      pmId,
+      clientName,
+      targetEndDate,
+      status,
+      developers = [],
+      qas = [],
+    } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ message: "Title is required" });
+    }
+
+    await conn.beginTransaction();
+
+    // 1️⃣ Insert project
+    const [result] = await conn.query(
+      `INSERT INTO projects 
+        (title, description, pmId, clientName, targetEndDate, status)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [title, description, pmId, clientName, targetEndDate, status],
     );
-    const project = await getProjectById(result.insertId);
+
+    const projectId = result.insertId;
+
+    // 2️⃣ Insert developers
+    for (const userId of developers) {
+      await conn.query(
+        `INSERT INTO project_users (project_id, user_id, role)
+         VALUES (?, ?, 'Developer')`,
+        [projectId, userId],
+      );
+    }
+
+    // 3️⃣ Insert QAs
+    for (const userId of qas) {
+      await conn.query(
+        `INSERT INTO project_users (project_id, user_id, role)
+         VALUES (?, ?, 'QA')`,
+        [projectId, userId],
+      );
+    }
+
+    await conn.commit();
+
+    // res.status(201).json({ message: "Project created", projectId });
+    const [[project]] = await pool.query(
+      `SELECT 
+     p.*,
+     u.name AS pmName,
+     (SELECT COUNT(*) FROM tasks t WHERE t.projectId = p.id) AS taskCount
+   FROM projects p
+   LEFT JOIN users u ON p.pmId = u.id
+   WHERE p.id = ?`,
+      [projectId],
+    );
+
     res.status(201).json(project);
   } catch (err) {
-    if (err.code === "ER_DUP_ENTRY")
-      return res.status(409).json({ message: "Project title already exists" });
-    console.error("POST /projects error:", err);
-    res.status(500).json({ message: "Failed to create project" });
+    await conn.rollback();
+    res.status(500).json({ message: err.message });
+  } finally {
+    conn.release();
   }
 });
+
+// ── POST /api/projects ────────────────────────────────────────
+// router.post("/", async (req, res) => {
+//   // Added status to destructuring
+//   const { title, description, pmId, clientName, targetEndDate, status, developers = [], qas = [] } = req.body;
+
+//   if (!title?.trim())
+//     return res.status(400).json({ message: "Title is required" });
+
+//   try {
+//     // Added status to INSERT query and values array
+//     const [result] = await pool.query(
+//       "INSERT INTO projects (title, description, pmId, clientName, targetEndDate, status) VALUES (?, ?, ?, ?, ?, ?)",
+//       [title.trim(), description ?? null, pmId ?? null, clientName ?? null, targetEndDate ?? null, status ?? 'ongoing']
+//     );
+//     const project = await getProjectById(result.insertId);
+//     res.status(201).json(project);
+//   } catch (err) {
+//     if (err.code === "ER_DUP_ENTRY")
+//       return res.status(409).json({ message: "Project title already exists" });
+//     console.error("POST /projects error:", err);
+//     res.status(500).json({ message: "Failed to create project" });
+//   }
+// });
 
 // ── PUT /api/projects/:id ─────────────────────────────────────
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
   // Added status to destructuring
-  const { title, description, pmId, clientName, targetEndDate, status } = req.body;
+  const { title, description, pmId, clientName, targetEndDate, status } =
+    req.body;
 
   if (!title?.trim())
     return res.status(400).json({ message: "Title is required" });
@@ -85,11 +163,18 @@ router.put("/:id", async (req, res) => {
     // Added status to UPDATE query and values array
     await pool.query(
       "UPDATE projects SET title = ?, description = ?, pmId = ?, clientName = ?, targetEndDate = ?, status = ? WHERE id = ?",
-      [title.trim(), description ?? null, pmId ?? null, clientName ?? null, targetEndDate ?? null, status ?? 'ongoing', id]
+      [
+        title.trim(),
+        description ?? null,
+        pmId ?? null,
+        clientName ?? null,
+        targetEndDate ?? null,
+        status ?? "ongoing",
+        id,
+      ],
     );
     const project = await getProjectById(id);
-    if (!project)
-      return res.status(404).json({ message: "Project not found" });
+    if (!project) return res.status(404).json({ message: "Project not found" });
     res.json(project);
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY")
@@ -103,10 +188,9 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const [result] = await pool.query(
-      "DELETE FROM projects WHERE id = ?",
-      [id]
-    );
+    const [result] = await pool.query("DELETE FROM projects WHERE id = ?", [
+      id,
+    ]);
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "Project not found" });
     res.json({ message: "Project deleted" });

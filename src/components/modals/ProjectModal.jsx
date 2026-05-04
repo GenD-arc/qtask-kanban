@@ -2,10 +2,14 @@
 
 import { useState, useMemo } from "react";
 import { clsx } from "clsx";
+import MultiUserSelect from "./MultiUserSelect";
 
-const inputClass   = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white";
-const primaryBtn   = "px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50";
-const secondaryBtn = "px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition";
+const inputClass =
+  "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white";
+const primaryBtn =
+  "px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50";
+const secondaryBtn =
+  "px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition";
 
 function Field({ label, children }) {
   return (
@@ -22,7 +26,7 @@ function ModalShell({ title, onClose, children }) {
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.3)" }}
     >
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-base font-semibold text-gray-800">{title}</h2>
           <button
@@ -42,25 +46,35 @@ export function ProjectFormModal({ project, users, onSave, onClose }) {
   const isEdit = !!project;
 
   // Format the date if it exists to strictly match YYYY-MM-DD
-  const formattedDate = project?.targetEndDate 
-    ? project.targetEndDate.split('T')[0] 
+  const formattedDate = project?.targetEndDate
+    ? project.targetEndDate.split("T")[0]
     : "";
 
   const [form, setForm] = useState({
-    title:         project?.title         ?? "",
-    description:   project?.description   ?? "",
-    pmId:          project?.pmId          ?? "",
-    clientName:    project?.clientName    ?? "",
-    targetEndDate: formattedDate,
-    status:        project?.status        ?? "ongoing", // <-- Added Status
+    title: "",
+    description: "",
+    pmId: "",
+    clientName: "",
+    targetEndDate: "",
+    status: "ongoing",
+    developers: [],
+    qas: [],
   });
-  const [error,   setError]   = useState(null);
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const pmUsers = useMemo(
-    () => users.filter((u) => u.role === "ProjectManager" || u.role === "Admin"),
-    [users]
+    () =>
+      users.filter((u) => u.role === "ProjectManager" || u.role === "Admin"),
+    [users],
   );
+
+  const devUsers = useMemo(
+    () => users.filter((u) => u.role === "Developer"),
+    [users],
+  );
+
+  const qaUsers = useMemo(() => users.filter((u) => u.role === "QA"), [users]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -73,12 +87,14 @@ export function ProjectFormModal({ project, users, onSave, onClose }) {
     try {
       setLoading(true);
       await onSave({
-        title:         form.title.trim(),
-        description:   form.description.trim() || null,
-        pmId:          form.pmId ? Number(form.pmId) : null,
-        clientName:    form.clientName.trim() || null,
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        pmId: form.pmId ? Number(form.pmId) : null,
+        clientName: form.clientName.trim() || null,
         targetEndDate: form.targetEndDate || null,
-        status:        form.status, // <-- Pass Status to API
+        status: form.status, // <-- Pass Status to API
+        developers: form.developers, // Pass selected developer IDs
+        qas: form.qas, // Pass selected QA IDs
       });
       onClose();
     } catch (err) {
@@ -88,8 +104,24 @@ export function ProjectFormModal({ project, users, onSave, onClose }) {
     }
   };
 
+  // const handleSubmit = () => {
+  //   console.log("Form submitted with data:", {
+  //     title: form.title.trim(),
+  //     description: form.description.trim() || null,
+  //     pmId: form.pmId ? Number(form.pmId) : null,
+  //     clientName: form.clientName.trim() || null,
+  //     targetEndDate: form.targetEndDate || null,
+  //     status: form.status, // <-- Pass Status to API
+  //     developers: form.developers, // Pass selected developer objects
+  //     qas: form.qas, // Pass selected QA objects
+  //   });
+  // };
+
   return (
-    <ModalShell title={isEdit ? "Edit Project" : "Add Project"} onClose={onClose}>
+    <ModalShell
+      title={isEdit ? "Edit Project" : "Add Project"}
+      onClose={onClose}
+    >
       <div className="space-y-4">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
@@ -131,22 +163,54 @@ export function ProjectFormModal({ project, users, onSave, onClose }) {
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Project Manager (optional)">
-            <select name="pmId" value={form.pmId} onChange={handleChange} className={inputClass}>
+            <select
+              name="pmId"
+              value={form.pmId}
+              onChange={handleChange}
+              className={inputClass}
+            >
               <option value="">Unassigned</option>
               {pmUsers.map((u) => (
-                <option key={u.id} value={u.id}>{u.name}</option>
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
               ))}
             </select>
           </Field>
 
           {/* New Status Field */}
           <Field label="Project Status">
-            <select name="status" value={form.status} onChange={handleChange} className={inputClass}>
+            <select
+              name="status"
+              value={form.status}
+              onChange={handleChange}
+              className={inputClass}
+            >
               <option value="ongoing">Ongoing</option>
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
           </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {/* Multiple Dev Field */}
+          <MultiUserSelect
+            label="Assign Developers"
+            users={devUsers}
+            selected={form.developers}
+            onChange={(val) =>
+              setForm((prev) => ({ ...prev, developers: val }))
+            }
+          />
+
+          {/* Multiple QA Field */}
+          <MultiUserSelect
+            label="Assign QAs"
+            users={qaUsers}
+            selected={form.qas}
+            onChange={(val) => setForm((prev) => ({ ...prev, qas: val }))}
+          />
         </div>
 
         <Field label="Target End Date (optional)">
@@ -160,8 +224,14 @@ export function ProjectFormModal({ project, users, onSave, onClose }) {
         </Field>
 
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className={secondaryBtn}>Cancel</button>
-          <button onClick={handleSubmit} disabled={loading} className={primaryBtn}>
+          <button onClick={onClose} className={secondaryBtn}>
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className={primaryBtn}
+          >
             {loading ? "Saving…" : isEdit ? "Save Changes" : "Add Project"}
           </button>
         </div>
@@ -172,7 +242,7 @@ export function ProjectFormModal({ project, users, onSave, onClose }) {
 
 export function DeleteConfirmModal({ project, onConfirm, onClose }) {
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
+  const [error, setError] = useState(null);
 
   const handleConfirm = async () => {
     try {
@@ -200,7 +270,9 @@ export function DeleteConfirmModal({ project, onConfirm, onClose }) {
           Tasks under this project will not be deleted but will become unlinked.
         </p>
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className={secondaryBtn}>Cancel</button>
+          <button onClick={onClose} className={secondaryBtn}>
+            Cancel
+          </button>
           <button
             onClick={handleConfirm}
             disabled={loading}
