@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import KanbanBoard from "./board/KanbanBoard";
 import KanbanHeader from "./board/KanbanHeader";
@@ -81,9 +82,12 @@ const SectionLabel = ({ children, collapsed, onToggle }) => (
 
 // ─────────────────────────────────────────────────────────────
 export default function AppShell({ currentUser, logout }) {
-  const [activePage, setActivePage] = useState(() =>
-    getDefaultPage(currentUser.role),
-  );
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Derive activePage from URL (strip leading slash)
+  const activePage =
+    location.pathname.replace(/^\//, "") || getDefaultPage(currentUser.role);
+  const setActivePage = useCallback((page) => navigate(`/${page}`), [navigate]);
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [devPhases, setDevPhases] = useState([]);
@@ -148,7 +152,7 @@ export default function AppShell({ currentUser, logout }) {
           isPM ? fetchProjects() : Promise.resolve([]),
           isPM ? fetchPhases("dev") : fetchPhases(grouping),
           isPM ? fetchPhases("qa") : Promise.resolve([]),
-          isPM ? fetchPhases("pm")  : Promise.resolve([]),
+          isPM ? fetchPhases("pm") : Promise.resolve([]),
           fetchStatuses(),
           fetchSeverities(),
           fetchUsers(),
@@ -392,9 +396,9 @@ export default function AppShell({ currentUser, logout }) {
         isDefault: isDefault ? 1 : 0,
         sortOrder: maxOrder + 1,
       });
-      if (saved.grouping === "dev")     setDevPhases((prev) => [...prev, saved]);
-      else if (saved.grouping === "pm") setPmPhases((prev)  => [...prev, saved]);
-      else                              setQaPhases((prev)  => [...prev, saved]);
+      if (saved.grouping === "dev") setDevPhases((prev) => [...prev, saved]);
+      else if (saved.grouping === "pm") setPmPhases((prev) => [...prev, saved]);
+      else setQaPhases((prev) => [...prev, saved]);
       setShowAddColumn(false);
       setRenderKey((k) => k + 1);
       window.dispatchEvent(new Event("phases-updated"));
@@ -491,8 +495,11 @@ export default function AppShell({ currentUser, logout }) {
     try {
       const updated = await updateSubtasks(taskId, newSubtasks);
       setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+      // Return the server-assigned subtasks so the modal can re-sync its local state
+      return updated.subtasks ?? newSubtasks;
     } catch (err) {
       console.error("Subtask update failed:", err.message);
+      return newSubtasks; // fall back to optimistic list on error
     }
   }, []);
 
@@ -860,7 +867,7 @@ export default function AppShell({ currentUser, logout }) {
           statuses={statuses}
           onUpdate={(taskId, fields) => {
             if (fields.subtasks !== undefined)
-              handleUpdateSubtasks(taskId, fields.subtasks);
+              return handleUpdateSubtasks(taskId, fields.subtasks);
           }}
           onEdit={handleEditTask}
           onDelete={handleDeleteTask}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { ChevronLeft, ChevronRight, FolderKanban, LogOut } from "lucide-react";
 import { getNavItems } from "../../config/navigation";
 import SidebarNavItem from "./SidebarNavItem";
@@ -19,6 +20,9 @@ export default function Sidebar({
   onLogout,
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
+  // Always derive the active page from the URL for accuracy on refresh
+  const currentPage = location.pathname.replace(/^\//, "") || activePage;
 
   const navItems = getNavItems(currentUser.role);
 
@@ -82,7 +86,7 @@ export default function Sidebar({
           <SidebarNavItem
             key={item.key}
             item={item}
-            isActive={activePage === item.key}
+            isActive={currentPage === item.key}
             collapsed={collapsed}
             onClick={onNavigate}
           />

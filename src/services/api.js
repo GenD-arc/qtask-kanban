@@ -71,6 +71,7 @@ export const fetchTasks = (projectId, assignedUserId, grouping) => {
   if (assignedUserId) params.append("assignedUserId", assignedUserId);
   if (grouping) params.append("grouping", grouping);
   const query = params.toString();
+
   return request("GET", `/tasks${query ? `?${query}` : ""}`);
 };
 
