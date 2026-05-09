@@ -13,6 +13,11 @@ import {
   MessageCircleMore,
 } from "lucide-react";
 import FileUpload from "../ui/FileUpload";
+import {
+  fetchSubtaskComments,
+  createSubtaskComment,
+  deleteSubtaskComment,
+} from "../../services/api";
 
 function normaliseSubtasks(subtasks) {
   return (subtasks ?? []).map((s) => ({
@@ -38,6 +43,12 @@ export default function TaskDetailModal({
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [subtaskMode, setSubtaskMode] = useState(false);
+  const [subtaskComments, setSubtaskComments] = useState([]);
+  const [activeSubtaskId, setActiveSubtaskId] = useState(null);
+  const [commentPanel, setCommentPanel] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [postingComment, setPostingComment] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(false);
   const [editForm, setEditForm] = useState({
     assigneeId: task.assigneeId ?? "",
     qaAssigneeId: task.qaAssigneeId ?? "",
@@ -136,6 +147,7 @@ export default function TaskDetailModal({
   };
 
   const handleDeleteSubtask = async (subtaskId) => {
+    setCommentPanel(false);
     const updated = localSubtasks.filter((s) => s.id !== subtaskId);
     setLocalSubtasks(updated);
     const saved = await onUpdate(task.id, { subtasks: updated });
@@ -152,25 +164,78 @@ export default function TaskDetailModal({
     }
   };
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) onClose();
+  // const handleBackdropClick = (e) => {
+  //   if (e.target === e.currentTarget) onClose();
+  // };
+
+  // ── Subtask comment handlers ─────────────────────────────────────────────
+  const openCommentPanel = async (subtask) => {
+    // If clicking the same subtask that's already open, just close
+    if (commentPanel && activeSubtaskId === subtask.id) {
+      setCommentPanel(false);
+      setActiveSubtaskId(null);
+      setSubtaskComments([]);
+      return;
+    }
+    setActiveSubtaskId(subtask.id);
+    setCommentPanel(true);
+    setSubtaskComments([]);
+    setLoadingComments(true);
+    try {
+      const comments = await fetchSubtaskComments(subtask.id);
+      setSubtaskComments(comments);
+    } catch (err) {
+      console.error("Failed to load subtask comments:", err.message);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!newComment.trim() || !activeSubtaskId) return;
+    setPostingComment(true);
+    try {
+      const created = await createSubtaskComment(
+        activeSubtaskId,
+        newComment.trim(),
+      );
+      setSubtaskComments((prev) => [...prev, created]);
+      setNewComment("");
+    } catch (err) {
+      console.error("Failed to post comment:", err.message);
+    } finally {
+      setPostingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!activeSubtaskId) return;
+    try {
+      await deleteSubtaskComment(commentId);
+      setSubtaskComments((prev) => prev.filter((c) => c.id !== commentId));
+    } catch (err) {
+      console.error("Failed to delete comment:", err.message);
+    }
   };
 
   // ── Shared header used in both views ─────────────────────────────────────
   const renderHeader = () => (
     <div className="flex items-start justify-between p-6 pb-4 border-b border-gray-100">
       <div className="flex items-center gap-2 flex-wrap">
+        <h2 className="text-lg font-semibold text-gray-800 leading-snug">
+          {task.title ?? task.name}
+        </h2>
         {(task.severity || task.severityLabel) && (
           <span
             className="text-xs font-semibold px-2 py-0.5 rounded-full"
-            style={{ color: sc.text, background: sc.bg }}
+            style={{
+              color: task.severityColor,
+              background: task.severityColor + 20,
+            }}
           >
             {task.severity ?? task.severityLabel}
           </span>
         )}
-        <h2 className="text-lg font-semibold text-gray-800 leading-snug">
-          {task.title ?? task.name}
-        </h2>
       </div>
 
       <div className="flex items-center gap-2 ml-4 shrink-0">
@@ -202,6 +267,7 @@ export default function TaskDetailModal({
           onClick={() => {
             setSubtaskMode((m) => !m);
             setEditMode(false);
+            setCommentPanel(false);
           }}
           className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition"
           style={
@@ -236,8 +302,9 @@ export default function TaskDetailModal({
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 pt-16 overflow-y-auto"
-      onClick={handleBackdropClick}
+      // onClick={handleBackdropClick}
     >
+      {/* LEFT: main Modal */}
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mb-16">
         {renderHeader()}
 
@@ -321,8 +388,13 @@ export default function TaskDetailModal({
                     </span>
                     <button
                       type="button"
-                      className="text-gray-500 hover:text-green-400 transition-colors text-sm leading-none shrink-0 cursor-pointer"
-                      title="Comment"
+                      onClick={() => openCommentPanel(subtask)}
+                      className={`transition-colors text-sm leading-none shrink-0 cursor-pointer ${
+                        activeSubtaskId === subtask.id && commentPanel
+                          ? "text-green-500"
+                          : "text-gray-500 hover:text-green-400"
+                      }`}
+                      title="Comments"
                     >
                       <MessageCircleMore size={14} />
                     </button>
@@ -723,6 +795,124 @@ export default function TaskDetailModal({
           </>
         )}
       </div>
+      {commentPanel && (
+        <div
+          className="ml-4 w-80 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          style={{ maxHeight: "520px" }}
+        >
+          {/* Header */}
+          <header className="flex justify-between items-center px-4 py-3 border-b border-gray-100 shrink-0">
+            <div className="flex gap-2 items-center min-w-0">
+              <MessageCircleMore
+                size={15}
+                className="text-green-500 shrink-0"
+              />
+              <h1 className="text-sm font-semibold text-gray-800 truncate">
+                {localSubtasks.find((s) => s.id === activeSubtaskId)?.title ??
+                  "Comments"}
+              </h1>
+            </div>
+            <button
+              onClick={() => {
+                setCommentPanel(false);
+                setActiveSubtaskId(null);
+                setSubtaskComments([]);
+              }}
+              className="text-gray-400 hover:text-gray-600 text-xl leading-none shrink-0 ml-2"
+            >
+              ✕
+            </button>
+          </header>
+
+          {/* Scrollable comment list */}
+          <main className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+            {loadingComments ? (
+              <div className="flex items-center justify-center h-full py-8">
+                <div
+                  className="w-5 h-5 rounded-full border-2 animate-spin"
+                  style={{
+                    borderColor: "#3b82f6",
+                    borderTopColor: "transparent",
+                  }}
+                />
+              </div>
+            ) : subtaskComments.length === 0 ? (
+              <p className="text-xs text-gray-400 italic text-center py-6">
+                No comments yet. Be the first to comment.
+              </p>
+            ) : (
+              subtaskComments.map((c) => (
+                <div key={c.id} className="flex gap-2 items-start">
+                  {/* Avatar */}
+                  <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                    {(c.commenterName ?? c.commenterUsername ?? "?")
+                      .charAt(0)
+                      .toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0 relative">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs font-semibold text-gray-700 truncate">
+                        {c.commenterName ?? c.commenterUsername ?? "Unknown"}
+                      </span>
+                      <span className="text-[10px] text-gray-400 shrink-0">
+                        {new Date(c.comment_date).toLocaleDateString("en-PH", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 wrap-break-words whitespace-pre-wrap mt-0.5">
+                      {c.comment}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteComment(c.id)}
+                      // onClick={() => {
+                      //   // Optimistically remove comment from UI
+                      //   setSubtaskComments((prev) =>
+                      //     prev.filter((comment) => comment.id !== c.id),
+                      //   );
+                      //   deleteSubtaskComment(c.id).catch((err) => {
+                      //     console.error(
+                      //       "Failed to delete comment:",
+                      //       err.message,
+                      //     );
+                      //     // Revert UI if deletion fails
+                      //     setSubtaskComments((prev) => [...prev, c]);
+                      //   });
+                      // }}
+                      className="absolute text-red-500 top-1/2 right-0 transform -translate-y-1/2 opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </main>
+
+          {/* Input */}
+          <div className="flex gap-2 px-4 py-3 border-t border-gray-100 shrink-0">
+            <input
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              onKeyDown={(e) =>
+                e.key === "Enter" && !e.shiftKey && handlePostComment()
+              }
+              placeholder="Write a comment…"
+              className="flex-1 border border-gray-200 rounded-lg h-8 px-3 text-sm focus:outline-none focus:border-blue-400 placeholder-gray-400"
+              disabled={postingComment}
+            />
+            <button
+              onClick={handlePostComment}
+              disabled={!newComment.trim() || postingComment}
+              className="bg-blue-500 hover:bg-blue-600 rounded-lg px-3 text-white text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+            >
+              {postingComment ? "…" : "Post"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

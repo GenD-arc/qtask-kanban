@@ -7,6 +7,8 @@ const FIXED_GROUPS = [
   { key: "pm", label: "Project Management", icon: "📋" },
 ];
 
+const BASE_URL = import.meta.env.VITE_API_URL;
+
 export default function PhasesPage() {
   const [phases, setPhases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +25,7 @@ export default function PhasesPage() {
   const fetchPhases = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:5000/api/phases");
+      const response = await fetch(`${BASE_URL}/phases`);
       if (!response.ok) throw new Error("Failed to fetch phases");
       const data = await response.json();
       setPhases(data);
@@ -39,7 +41,7 @@ export default function PhasesPage() {
     const label = newPhaseLabel.trim();
     if (!label) return;
     try {
-      const response = await fetch("http://localhost:5000/api/phases", {
+      const response = await fetch(`${BASE_URL}/phases`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ label, grouping: group, sortOrder: 0 }),
@@ -56,7 +58,7 @@ export default function PhasesPage() {
 
   const handleDeletePhase = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/phases/${id}`, {
+      const response = await fetch(`${BASE_URL}/phases/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete phase");
@@ -72,7 +74,7 @@ export default function PhasesPage() {
 
   const handleUpdatePhase = async (id, payload) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/phases/${id}`, {
+      const response = await fetch(`${BASE_URL}/phases/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

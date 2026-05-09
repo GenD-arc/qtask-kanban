@@ -134,9 +134,9 @@ export default function KanbanHeader({
           style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}
         >
           {/* Assignee / User */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              User
+          <div className="space-y-1 space-x-2">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-400">
+              Dev
             </label>
             <select
               value={filters.userId ?? ""}
@@ -158,8 +158,8 @@ export default function KanbanHeader({
           </div>
 
           {/* Severity */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+          <div className="space-y-1 space-x-2">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-400">
               Severity
             </label>
             <select
@@ -182,8 +182,8 @@ export default function KanbanHeader({
           </div>
 
           {/* Status */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+          <div className="space-y-1 space-x-2">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-400">
               Status
             </label>
             <select

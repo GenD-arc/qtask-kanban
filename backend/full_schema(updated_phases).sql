@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 04, 2026 at 06:08 AM
+-- Generation Time: May 09, 2026 at 04:33 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.1.25
 
@@ -219,7 +219,15 @@ INSERT INTO `activity_logs` (`id`, `taskId`, `userId`, `action`, `createdAt`) VA
 (225, 16, 1, 'Dev assignee changed from \"Unassigned\" to \"Admin User\" ? QA assignee changed from \"Unassigned\" to \"Dana Cruz\" ? Status changed from \"Not Started\" to \"Active\" ? Severity changed from \"None\" to \"1 - Critical\"', '2026-05-04 09:08:37'),
 (226, 10, 1, 'Phase changed from \"? For Deployment\" to \"? Today\'s Focus\"', '2026-05-04 10:20:03'),
 (227, 10, 1, 'Phase changed from \"🔥 Today\'s Focus\" to \"👀  For Review (Dev Done)\"', '2026-05-04 11:53:19'),
-(228, 10, 1, 'Phase changed from \"👀  For Review (Dev Done)\" to \"🔥 Today\'s Focus\"', '2026-05-04 11:53:20');
+(228, 10, 1, 'Phase changed from \"👀  For Review (Dev Done)\" to \"🔥 Today\'s Focus\"', '2026-05-04 11:53:20'),
+(229, 16, 1, 'Phase changed from \"🏃 In Progress\" to \"🟩Completed\"', '2026-05-04 12:35:08'),
+(230, 16, 1, 'Phase changed from \"🟩Completed\" to \"🏃 In Progress\"', '2026-05-04 12:35:10'),
+(231, 16, 1, 'Phase changed from \"🏃 In Progress\" to \"🟩Completed\"', '2026-05-04 12:35:11'),
+(232, 16, 1, 'Phase changed from \"🟩Completed\" to \"🤝 Ready to Assign (Handover)\"', '2026-05-04 12:42:00'),
+(233, 16, 1, 'Phase changed from \"🤝 Ready to Assign (Handover)\" to \"🟩Completed\"', '2026-05-04 12:42:01'),
+(234, 16, 1, 'Phase changed from \"🟩Completed\" to \"🤝 Ready to Assign (Handover)\"', '2026-05-04 12:42:02'),
+(235, 16, 1, 'Phase changed from \"🤝 Ready to Assign (Handover)\" to \"📝 Drafting Specs - Requirements\"', '2026-05-04 12:42:03'),
+(236, 16, 1, 'Phase changed from \"📝 Drafting Specs - Requirements\" to \"🏃 In Progress\"', '2026-05-04 12:42:04');
 
 -- --------------------------------------------------------
 
@@ -269,10 +277,10 @@ INSERT INTO `phases` (`id`, `label`, `sortOrder`, `isDefault`, `isFinal`, `group
 (2, '🏃 In Progress', 1, 1, 0, 'dev'),
 (3, '👀  For Review (Dev Done)', 2, 0, 0, 'dev'),
 (4, '📋 To Do (Ready for Dev)', 3, 0, 0, 'dev'),
-(5, '🚫Not a Defect', 3, 0, 0, 'qa'),
-(6, '🧾QA Execution', 2, 0, 0, 'qa'),
-(7, '🟩Completed', 1, 0, 0, 'qa'),
-(8, '🟣Blocked', 0, 0, 0, 'qa'),
+(5, '🚫 Not a Defect', 3, 0, 0, 'qa'),
+(6, '🧾 QA Execution', 2, 0, 0, 'qa'),
+(7, '🟩 Completed', 1, 0, 0, 'qa'),
+(8, '🟣 Blocked', 0, 0, 0, 'qa'),
 (32, '📝 Drafting Specs - Requirements', 0, 0, 0, 'pm'),
 (33, '🧊 Backlog', 4, 0, 0, 'dev'),
 (34, '🚀 For Deployment', 5, 0, 1, 'dev'),
@@ -395,20 +403,30 @@ INSERT INTO `subtasks` (`id`, `taskId`, `title`, `isDone`) VALUES
 (531, 16, 'test', 1),
 (532, 16, '2', 0),
 (533, 16, 'tesrt3', 0),
-(536, 10, 'test subtask', 0);
+(542, 10, 'test subtask', 0),
+(543, 10, 'test 2', 0);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `subtask_comment`
+-- Table structure for table `subtask_comments`
 --
 
-CREATE TABLE `subtask_comment` (
-  `comment_id` int(11) NOT NULL,
+CREATE TABLE `subtask_comments` (
+  `id` int(11) NOT NULL,
+  `subtask_id` int(11) NOT NULL,
   `user_id_comment` int(11) NOT NULL,
   `comment` text DEFAULT NULL,
   `comment_date` date NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `subtask_comments`
+--
+
+INSERT INTO `subtask_comments` (`id`, `subtask_id`, `user_id_comment`, `comment`, `comment_date`) VALUES
+(1, 1, 1, 'testing comment', '2026-05-09'),
+(2, 1, 1, 'comment again', '2026-05-09');
 
 -- --------------------------------------------------------
 
@@ -448,7 +466,7 @@ INSERT INTO `tasks` (`id`, `projectId`, `title`, `description`, `statusId`, `pha
 (6, 1, 'Kanban Frontend', 'test data no. 1', 8, 8, 2, 3, 8, '2026-04-20', '2026-04-25', 100, '2026-04-19 11:29:17', '2026-04-25 12:16:53', NULL, 0),
 (9, 2, 'pouble denetration', NULL, 1, 34, 3, 2, NULL, '2026-04-27', '2026-04-27', 100, '2026-04-24 17:16:23', '2026-05-04 09:40:42', NULL, 0),
 (10, 3, 'tetest', NULL, 1, 1, 2, 9, 4, '2026-04-29', '2026-05-04', 0, '2026-04-25 13:22:18', '2026-05-04 11:53:20', 2, 0),
-(16, 3, 'test', NULL, 2, 2, 1, 1, 4, '2026-05-14', NULL, 33, '2026-05-04 09:00:52', '2026-05-04 10:19:59', NULL, 0);
+(16, 3, 'test', NULL, 2, 2, 1, 1, 4, '2026-05-14', NULL, 33, '2026-05-04 09:00:52', '2026-05-04 12:42:04', NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -559,10 +577,10 @@ ALTER TABLE `subtasks`
   ADD KEY `fk_subtask_task` (`taskId`);
 
 --
--- Indexes for table `subtask_comment`
+-- Indexes for table `subtask_comments`
 --
-ALTER TABLE `subtask_comment`
-  ADD PRIMARY KEY (`comment_id`);
+ALTER TABLE `subtask_comments`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `tasks`
@@ -598,7 +616,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=229;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=237;
 
 --
 -- AUTO_INCREMENT for table `assessments`
@@ -640,13 +658,13 @@ ALTER TABLE `statuses`
 -- AUTO_INCREMENT for table `subtasks`
 --
 ALTER TABLE `subtasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=542;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=544;
 
 --
--- AUTO_INCREMENT for table `subtask_comment`
+-- AUTO_INCREMENT for table `subtask_comments`
 --
-ALTER TABLE `subtask_comment`
-  MODIFY `comment_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `subtask_comments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tasks`

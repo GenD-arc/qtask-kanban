@@ -78,6 +78,16 @@ export const fetchTasks = (projectId, assignedUserId, grouping) => {
 // ── Tasks ─────────────────────────────────────────────────────
 export const createTask = (payload) => request("POST", "/tasks", payload);
 
+// ── Subtasks Comments ─────────────────────────────────────────────────────
+export const fetchSubtaskComments = (subtaskId) =>
+  request("GET", `/subtask-comments/${subtaskId}`);
+
+export const createSubtaskComment = (subtaskId, comment) =>
+  request("POST", `/subtask-comments/${subtaskId}`, { comment });
+
+export const deleteSubtaskComment = (subtaskId) =>
+  request("DELETE", `/subtask-comments/${subtaskId}`);
+
 // ── Activity Logs ─────────────────────────────────────────────
 export const fetchActivityLogs = (filters = {}) => {
   const params = new URLSearchParams(filters).toString();

@@ -26,6 +26,7 @@ import {
   fetchTasks,
   fetchUsers,
   fetchProjects,
+  fetchSubtaskComments,
   createPhase,
   moveTask,
   createTask,
@@ -192,6 +193,19 @@ export default function AppShell({ currentUser, logout }) {
     }
     loadTasks();
   }, [activeProjectId, isPM, currentUser]);
+
+  // ── Fetch subtask comments ───────────────
+  // useEffect(() => {
+  //   async function loadSubtaskComments() {
+  //     try {
+  //       const subtaskComments = await fetchSubtaskComments(subtask_id);
+  //       setSubtaskComments(subtaskComments);
+  //     } catch (err) {
+  //       console.error("Failed to load subtask comments:", err.message);
+  //     }
+  //   }
+  //   loadSubtaskComments();
+  // }, []);
 
   // ── Real-time update listeners ────────────────────────────
   useEffect(() => {
@@ -663,7 +677,7 @@ export default function AppShell({ currentUser, logout }) {
             />
             {isPM ? (
               <>
-                <div className="mb-8">
+                <div className="mb-4">
                   <SectionLabel
                     collapsed={collapsedGroups.has("dev")}
                     onToggle={() => handleToggleGroup("dev")}
@@ -680,7 +694,7 @@ export default function AppShell({ currentUser, logout }) {
                     />
                   )}
                 </div>
-                <div>
+                <div className="mb-4">
                   <SectionLabel
                     collapsed={collapsedGroups.has("qa")}
                     onToggle={() => handleToggleGroup("qa")}
@@ -697,7 +711,7 @@ export default function AppShell({ currentUser, logout }) {
                     />
                   )}
                 </div>
-                <div>
+                <div className="mb-4">
                   <SectionLabel
                     collapsed={collapsedGroups.has("pm")}
                     onToggle={() => handleToggleGroup("pm")}
