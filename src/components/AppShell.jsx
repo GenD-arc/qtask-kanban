@@ -33,6 +33,7 @@ import {
   updateTask,
   deleteTask,
   updateSubtasks,
+  fetchProjectUsers,
 } from "../services/api";
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -107,6 +108,8 @@ export default function AppShell({ currentUser, logout }) {
   const [detailTask, setDetailTask] = useState(null);
   const [analyticsProjectId, setAnalyticsProjectId] = useState(null);
 
+  const [projectUsers, setProjectUsers] = useState([]);
+
   // ── Kanban filter state ───────────────────────────────────
   const [kanbanFilters, setKanbanFilters] = useState({
     userId: null,
@@ -173,6 +176,20 @@ export default function AppShell({ currentUser, logout }) {
     }
     loadStatic();
   }, [isPM, grouping]);
+
+  // ── Load project users when activeProjectId changes ────────
+  // Only fetch when a real project is selected — never with null
+  useEffect(() => {
+    if (!activeProjectId) {
+      setProjectUsers([]);
+      return;
+    }
+    fetchProjectUsers(activeProjectId)
+      .then(setProjectUsers)
+      .catch((err) =>
+        console.error("Failed to load project users:", err.message),
+      );
+  }, [activeProjectId]);
 
   // ── Load tasks when activeProjectId changes ───────────────
   useEffect(() => {
@@ -877,6 +894,7 @@ export default function AppShell({ currentUser, logout }) {
         <TaskDetailModal
           task={detailTask}
           users={users}
+          projectUsers={projectUsers}
           severities={severities}
           statuses={statuses}
           onUpdate={(taskId, fields) => {
@@ -905,6 +923,8 @@ export default function AppShell({ currentUser, logout }) {
           users={users}
           phases={allPhases}
           severities={severities}
+          activeProject={activeProjectId}
+          projectUsers={projectUsers}
         />
       )}
 

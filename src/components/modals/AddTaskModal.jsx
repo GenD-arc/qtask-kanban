@@ -16,13 +16,25 @@ export default function AddTaskModal({
   users = [],
   phases = [],
   severities = [],
+  activeProject,
+  projectUsers = [],
 }) {
   const defaultPhase = phases.find((p) => p.isDefault) ?? phases[0];
+
+  // Filter projectUsers by role — fall back to all users if no project is selected
+  const devUsers = projectUsers.length > 0
+    ? projectUsers.filter((u) => u.role === "Developer")
+    : users.filter((u) => u.role === "Developer");
+
+  const qaUsers = projectUsers.length > 0
+    ? projectUsers.filter((u) => u.role === "QA")
+    : users.filter((u) => u.role === "QA");
 
   const [form, setForm] = useState({
     title: "",
     description: "",
     assigneeId: "",
+    qaAssigneeId: "",
     severityId: "",
     targetDate: "",
   });
@@ -33,9 +45,10 @@ export default function AddTaskModal({
   const buildPayload = () => ({
     title: form.title.trim(),
     description: form.description.trim() || null,
-    phaseId: defaultPhase?.id ?? undefined, // lands in the default phase column
-    statusId: 1, // default "To Do" status
+    phaseId: defaultPhase?.id ?? undefined,
+    statusId: 1,
     assigneeId: form.assigneeId ? Number(form.assigneeId) : null,
+    qaAssigneeId: form.qaAssigneeId ? Number(form.qaAssigneeId) : null,
     severityId: form.severityId ? Number(form.severityId) : null,
     targetDate: form.targetDate || null,
   });
@@ -60,6 +73,20 @@ export default function AddTaskModal({
   };
 
   const canSubmit = form.title.trim().length > 0 && !adding;
+
+  // load specific users tied to the project
+  // useEffect(() => {
+  //   const getProjectUsers = async () => {
+  //     try {
+  //       const data = await fetchProjectUsers(activeProject);
+  //       setUsers(data);
+  //     } catch (err) {
+  //       alert("Error fetching users");
+  //     }
+  //   };
+
+  //   getProjectUsers();
+  // }, []);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -116,11 +143,11 @@ export default function AddTaskModal({
             />
           </div>
 
-          {/* Assignee + Severity */}
+          {/* Dev and QA Assignee */}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Assignee
+                Dev Assignee
               </label>
               <select
                 value={form.assigneeId}
@@ -128,8 +155,8 @@ export default function AddTaskModal({
                 className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-blue-400 bg-white"
               >
                 <option value="">Unassigned</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
+                {devUsers.map((u) => (
+                  <option key={u.id} value={u.user_id ?? u.id}>
                     {u.name}
                   </option>
                 ))}
@@ -138,21 +165,40 @@ export default function AddTaskModal({
 
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Severity
+                QA Assignee
               </label>
               <select
-                value={form.severityId}
-                onChange={(e) => set("severityId", e.target.value)}
+                value={form.qaAssigneeId}
+                onChange={(e) => set("qaAssigneeId", e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-blue-400 bg-white"
               >
-                <option value="">None</option>
-                {severities.map((sv) => (
-                  <option key={sv.id} value={sv.id}>
-                    {sv.label}
+                <option value="">Unassigned</option>
+                {qaUsers.map((u) => (
+                  <option key={u.id} value={u.user_id ?? u.id}>
+                    {u.name}
                   </option>
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Severity */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Severity
+            </label>
+            <select
+              value={form.severityId}
+              onChange={(e) => set("severityId", e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-blue-400 bg-white"
+            >
+              <option value="">None</option>
+              {severities.map((sv) => (
+                <option key={sv.id} value={sv.id}>
+                  {sv.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Target date */}

@@ -29,6 +29,7 @@ function normaliseSubtasks(subtasks) {
 export default function TaskDetailModal({
   task,
   users = [],
+  projectUsers = [],
   severities = [],
   statuses = [],
   onUpdate,
@@ -76,7 +77,15 @@ export default function TaskDetailModal({
 
   const isQAPhase = task.phaseGrouping === "qa";
   const missingQA = isQAPhase && !task.qaAssigneeId;
-  const qaUsers = users.filter((u) => u.role === "QA");
+
+  // Filter by role — prefer project-scoped list, fall back to full users list
+  const devUsers = projectUsers.length > 0
+    ? projectUsers.filter((u) => u.role === "Developer")
+    : users.filter((u) => u.role === "Developer");
+
+  const qaUsers = projectUsers.length > 0
+    ? projectUsers.filter((u) => u.role === "QA")
+    : users.filter((u) => u.role === "QA");
 
   const setField = (k, v) => setEditForm((prev) => ({ ...prev, [k]: v }));
 
@@ -457,7 +466,7 @@ export default function TaskDetailModal({
                   {/* Dev assignee */}
                   <div className="space-y-0.5">
                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                      Assignee
+                      Dev Assignee
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-[10px]">
@@ -589,7 +598,7 @@ export default function TaskDetailModal({
                   {/* Dev assignee */}
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      Assignee
+                      Dev Assignee
                     </label>
                     <select
                       value={editForm.assigneeId}
@@ -597,9 +606,9 @@ export default function TaskDetailModal({
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 bg-white"
                     >
                       <option value="">Unassigned</option>
-                      {users.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.name} ({u.role})
+                      {devUsers.map((u) => (
+                        <option key={u.id} value={u.user_id ?? u.id}>
+                          {u.name}
                         </option>
                       ))}
                     </select>
@@ -617,7 +626,7 @@ export default function TaskDetailModal({
                     >
                       <option value="">Unassigned</option>
                       {qaUsers.map((u) => (
-                        <option key={u.id} value={u.id}>
+                        <option key={u.id} value={u.user_id ?? u.id}>
                           {u.name}
                         </option>
                       ))}

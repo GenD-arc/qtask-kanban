@@ -57,6 +57,9 @@ export const deleteSeverity = (id) => request("DELETE", `/severities/${id}`);
 // ── Users ─────────────────────────────────────────────────────
 export const fetchUsers = () => request("GET", "/users");
 
+// ── GET SPECIFIC Users assigned to project ─────────────────────────────────────────────────────
+export const fetchProjectUsers = (id) => request("GET", `/users/project/${id}`);
+
 // ── Projects ──────────────────────────────────────────────────
 export const fetchProjects = () => request("GET", "/projects");
 export const createProject = (payload) => request("POST", "/projects", payload);

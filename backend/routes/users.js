@@ -1,7 +1,7 @@
-const express  = require("express");
-const bcrypt   = require("bcrypt");
-const router   = express.Router();
-const pool     = require("../config/db");
+const express = require("express");
+const bcrypt = require("bcrypt");
+const router = express.Router();
+const pool = require("../config/db");
 
 const SALT_ROUNDS = 10;
 
@@ -15,11 +15,33 @@ router.get("/", async (req, res) => {
       `SELECT id, name, username, role, isActive
        FROM users
        ${showAll ? "" : "WHERE isActive = 1"}
-       ORDER BY name ASC`
+       ORDER BY name ASC`,
     );
     res.json(rows);
   } catch (err) {
     console.error("GET /users error:", err);
+    res.status(500).json({ message: "Failed to fetch users" });
+  }
+});
+
+// ── GET /api/users/project/:id ────────────────────────────────────────────
+// Return a specific line of users that is assigned to the project
+router.get("/project/:id", async (req, res) => {
+  const projectId = req.params.id;
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT pu.id, pu.project_id, pu.user_id, pu.role, u.name
+       FROM project_users pu
+       INNER JOIN users u ON pu.user_id = u.id
+       WHERE project_id = ?
+      `,
+      [projectId],
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error("GET /users/project/id:", err);
     res.status(500).json({ message: "Failed to fetch users" });
   }
 });
@@ -29,21 +51,24 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   const { name, username, password, role } = req.body;
 
-  if (!name?.trim())     return res.status(400).json({ message: "Name is required" });
-  if (!username?.trim()) return res.status(400).json({ message: "Username is required" });
-  if (!password?.trim()) return res.status(400).json({ message: "Password is required" });
-  if (!role)             return res.status(400).json({ message: "Role is required" });
+  if (!name?.trim())
+    return res.status(400).json({ message: "Name is required" });
+  if (!username?.trim())
+    return res.status(400).json({ message: "Username is required" });
+  if (!password?.trim())
+    return res.status(400).json({ message: "Password is required" });
+  if (!role) return res.status(400).json({ message: "Role is required" });
 
   try {
     const hashed = await bcrypt.hash(password, SALT_ROUNDS);
     const [result] = await pool.query(
       `INSERT INTO users (name, username, password, role, isActive)
        VALUES (?, ?, ?, ?, 1)`,
-      [name.trim(), username.trim().toLowerCase(), hashed, role]
+      [name.trim(), username.trim().toLowerCase(), hashed, role],
     );
     const [rows] = await pool.query(
       "SELECT id, name, username, role, isActive FROM users WHERE id = ?",
-      [result.insertId]
+      [result.insertId],
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -60,18 +85,20 @@ router.put("/:id", async (req, res) => {
   const { id } = req.params;
   const { name, username, role } = req.body;
 
-  if (!name?.trim())     return res.status(400).json({ message: "Name is required" });
-  if (!username?.trim()) return res.status(400).json({ message: "Username is required" });
-  if (!role)             return res.status(400).json({ message: "Role is required" });
+  if (!name?.trim())
+    return res.status(400).json({ message: "Name is required" });
+  if (!username?.trim())
+    return res.status(400).json({ message: "Username is required" });
+  if (!role) return res.status(400).json({ message: "Role is required" });
 
   try {
     await pool.query(
       "UPDATE users SET name = ?, username = ?, role = ? WHERE id = ?",
-      [name.trim(), username.trim().toLowerCase(), role, id]
+      [name.trim(), username.trim().toLowerCase(), role, id],
     );
     const [rows] = await pool.query(
       "SELECT id, name, username, role, isActive FROM users WHERE id = ?",
-      [id]
+      [id],
     );
     if (rows.length === 0)
       return res.status(404).json({ message: "User not found" });
@@ -87,19 +114,21 @@ router.put("/:id", async (req, res) => {
 // ── PATCH /api/users/:id/password ────────────────────────────
 // Admin only — reset a user's password.
 router.patch("/:id/password", async (req, res) => {
-  const { id }          = req.params;
+  const { id } = req.params;
   const { newPassword } = req.body;
 
   if (!newPassword?.trim())
     return res.status(400).json({ message: "New password is required" });
   if (newPassword.length < 6)
-    return res.status(400).json({ message: "Password must be at least 6 characters" });
+    return res
+      .status(400)
+      .json({ message: "Password must be at least 6 characters" });
 
   try {
     const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS);
     const [result] = await pool.query(
       "UPDATE users SET password = ? WHERE id = ?",
-      [hashed, id]
+      [hashed, id],
     );
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "User not found" });
@@ -113,7 +142,7 @@ router.patch("/:id/password", async (req, res) => {
 // ── PATCH /api/users/:id/status ──────────────────────────────
 // Admin only — toggle isActive.
 router.patch("/:id/status", async (req, res) => {
-  const { id }       = req.params;
+  const { id } = req.params;
   const { isActive } = req.body;
 
   if (isActive === undefined)
@@ -122,13 +151,13 @@ router.patch("/:id/status", async (req, res) => {
   try {
     const [result] = await pool.query(
       "UPDATE users SET isActive = ? WHERE id = ?",
-      [isActive ? 1 : 0, id]
+      [isActive ? 1 : 0, id],
     );
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "User not found" });
     const [rows] = await pool.query(
       "SELECT id, name, username, role, isActive FROM users WHERE id = ?",
-      [id]
+      [id],
     );
     res.json(rows[0]);
   } catch (err) {
@@ -145,17 +174,15 @@ router.delete("/:id", async (req, res) => {
   try {
     const [tasks] = await pool.query(
       "SELECT COUNT(*) AS count FROM tasks WHERE assigneeId = ?",
-      [id]
+      [id],
     );
     if (tasks[0].count > 0)
       return res.status(400).json({
-        message: "Cannot delete: this user has assigned tasks. Reassign or remove their tasks first.",
+        message:
+          "Cannot delete: this user has assigned tasks. Reassign or remove their tasks first.",
       });
 
-    const [result] = await pool.query(
-      "DELETE FROM users WHERE id = ?",
-      [id]
-    );
+    const [result] = await pool.query("DELETE FROM users WHERE id = ?", [id]);
     if (result.affectedRows === 0)
       return res.status(404).json({ message: "User not found" });
 
