@@ -24,8 +24,7 @@ router.get("/my", async (req, res) => {
     ? Number(req.headers["x-user-id"])
     : null;
 
-  if (!userId)
-    return res.status(400).json({ message: "User not identified" });
+  if (!userId) return res.status(400).json({ message: "User not identified" });
 
   try {
     const [rows] = await pool.query(
@@ -39,7 +38,7 @@ router.get("/my", async (req, res) => {
        LEFT JOIN tasks t ON t.projectId = p.id
        GROUP BY p.id
        ORDER BY p.title ASC`,
-      [userId]
+      [userId],
     );
     res.json(rows);
   } catch (err) {
@@ -183,16 +182,27 @@ router.post("/", async (req, res) => {
 
 // ── PUT /api/projects/:id ─────────────────────────────────────
 router.put("/:id", async (req, res) => {
+  const conn = await pool.getConnection();
   const { id } = req.params;
   // Added status to destructuring
-  const { title, description, pmId, clientName, targetEndDate, status } =
-    req.body;
+  const {
+    title,
+    description,
+    pmId,
+    clientName,
+    targetEndDate,
+    status,
+    devs = [],
+    qas = [],
+  } = req.body;
 
   if (!title?.trim())
     return res.status(400).json({ message: "Title is required" });
 
   try {
     // Added status to UPDATE query and values array
+    await conn.beginTransaction();
+
     await pool.query(
       "UPDATE projects SET title = ?, description = ?, pmId = ?, clientName = ?, targetEndDate = ?, status = ? WHERE id = ?",
       [
@@ -205,14 +215,46 @@ router.put("/:id", async (req, res) => {
         id,
       ],
     );
+
+    // Update developers
+    await pool.query(
+      "DELETE FROM project_users WHERE project_id = ? AND role = 'Developer'",
+      [id],
+    );
+    for (const userId of devs) {
+      await pool.query(
+        `INSERT INTO project_users (project_id, user_id, role)
+         VALUES (?, ?, 'Developer')`,
+        [id, userId],
+      );
+    }
+
+    // Update QAs
+    await pool.query(
+      "DELETE FROM project_users WHERE project_id = ? AND role = 'QA'",
+      [id],
+    );
+    for (const userId of qas) {
+      await pool.query(
+        `INSERT INTO project_users (project_id, user_id, role)
+         VALUES (?, ?, 'QA')`,
+        [id, userId],
+      );
+    }
+
+    await conn.commit();
+
     const project = await getProjectById(id);
     if (!project) return res.status(404).json({ message: "Project not found" });
     res.json(project);
   } catch (err) {
+    await conn.rollback();
     if (err.code === "ER_DUP_ENTRY")
       return res.status(409).json({ message: "Project title already exists" });
     console.error("PUT /projects/:id error:", err);
     res.status(500).json({ message: "Failed to update project" });
+  } finally {
+    conn.release();
   }
 });
 

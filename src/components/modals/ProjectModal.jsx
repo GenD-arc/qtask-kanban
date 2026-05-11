@@ -1,8 +1,9 @@
 // src/components/modals/ProjectModals.jsx
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { clsx } from "clsx";
 import MultiUserSelect from "./MultiUserSelect";
+import { fetchProjectUsers } from "../../services/api";
 
 const inputClass =
   "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white";
@@ -45,41 +46,56 @@ function ModalShell({ title, onClose, children }) {
 export function ProjectFormModal({ project, users, onSave, onClose }) {
   const isEdit = !!project;
 
-  // Format the date if it exists to strictly match YYYY-MM-DD
-  const formattedDate = project?.targetEndDate
-    ? project.targetEndDate.split("T")[0]
-    : "";
-
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    pmId: "",
-    clientName: "",
-    targetEndDate: "",
-    status: "ongoing",
-    developers: [],
-    qas: [],
-  });
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-
   const pmUsers = useMemo(
     () =>
       users.filter((u) => u.role === "ProjectManager" || u.role === "Admin"),
     [users],
   );
-
   const devUsers = useMemo(
     () => users.filter((u) => u.role === "Developer"),
     [users],
   );
-
   const qaUsers = useMemo(() => users.filter((u) => u.role === "QA"), [users]);
+
+  const [form, setForm] = useState({
+    title: project?.title ?? "",
+    description: project?.description ?? "",
+    pmId: project?.pmId ?? "",
+    clientName: project?.clientName ?? "",
+    targetEndDate: project?.targetEndDate
+      ? project.targetEndDate.split("T")[0]
+      : "",
+    status: project?.status ?? "ongoing",
+    developers: [], // pre-filled below via useEffect
+    qas: [],
+  });
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // When editing, fetch the current project_users and pre-fill the lists
+  useEffect(() => {
+    if (!isEdit || !project?.id) return;
+    fetchProjectUsers(project.id)
+      .then((members) => {
+        const devIds = members
+          .filter((m) => m.role === "Developer")
+          .map((m) => m.user_id);
+        const qaIds = members
+          .filter((m) => m.role === "QA")
+          .map((m) => m.user_id);
+        setForm((prev) => ({ ...prev, developers: devIds, qas: qaIds }));
+      })
+      .catch((err) =>
+        console.error("Failed to load project members:", err.message),
+      );
+  }, [isEdit, project?.id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
+
+  console.log(form);
 
   const handleSubmit = async () => {
     setError(null);
@@ -93,7 +109,7 @@ export function ProjectFormModal({ project, users, onSave, onClose }) {
         clientName: form.clientName.trim() || null,
         targetEndDate: form.targetEndDate || null,
         status: form.status, // <-- Pass Status to API
-        developers: form.developers, // Pass selected developer IDs
+        devs: form.developers, // Pass selected developer IDs
         qas: form.qas, // Pass selected QA IDs
       });
       onClose();
