@@ -79,13 +79,15 @@ export default function TaskDetailModal({
   const missingQA = isQAPhase && !task.qaAssigneeId;
 
   // Filter by role — prefer project-scoped list, fall back to full users list
-  const devUsers = projectUsers.length > 0
-    ? projectUsers.filter((u) => u.role === "Developer")
-    : users.filter((u) => u.role === "Developer");
+  const devUsers =
+    projectUsers.length > 0
+      ? projectUsers.filter((u) => u.role === "Developer")
+      : users.filter((u) => u.role === "Developer");
 
-  const qaUsers = projectUsers.length > 0
-    ? projectUsers.filter((u) => u.role === "QA")
-    : users.filter((u) => u.role === "QA");
+  const qaUsers =
+    projectUsers.length > 0
+      ? projectUsers.filter((u) => u.role === "QA")
+      : users.filter((u) => u.role === "QA");
 
   const setField = (k, v) => setEditForm((prev) => ({ ...prev, [k]: v }));
 
@@ -752,55 +754,58 @@ export default function TaskDetailModal({
 
             {/* ── 4. Attachments ── */}
             <div className="border-b border-gray-100">
-              <FileUpload taskId={task.id} />
+              <FileUpload taskId={task.id} isPM={isPM} />
             </div>
 
             {/* ── 5. Footer: delete ── */}
-            <div className="px-6 py-4">
-              {!confirmingDelete ? (
-                <button
-                  type="button"
-                  onClick={() => setConfirmingDelete(true)}
-                  className="flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
-                >
-                  <Trash2 size={16} />
-                  Delete this task
-                </button>
-              ) : (
-                <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-                  <svg
-                    className="w-4 h-4 text-red-400 shrink-0"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M8 2a6 6 0 100 12A6 6 0 008 2zm0 3.5v3m0 2h.01" />
-                  </svg>
-                  <span className="flex-1 text-sm text-red-700">
-                    Delete <strong>{task.title}</strong>? This cannot be undone.
-                  </span>
+            {isPM && (
+              <div className="px-6 py-4">
+                {!confirmingDelete ? (
                   <button
                     type="button"
-                    onClick={() => setConfirmingDelete(false)}
-                    disabled={deleting}
-                    className="text-sm text-gray-500 hover:text-gray-700 transition cursor-pointer"
+                    onClick={() => setConfirmingDelete(true)}
+                    className="flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
                   >
-                    Cancel
+                    <Trash2 size={16} />
+                    Delete this task
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleDeleteTask}
-                    disabled={deleting}
-                    className="px-3 py-1.5 text-sm font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition disabled:opacity-50 shrink-0 cursor-pointer"
-                  >
-                    {deleting ? "Deleting…" : "Yes, delete"}
-                  </button>
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                    <svg
+                      className="w-4 h-4 text-red-400 shrink-0"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M8 2a6 6 0 100 12A6 6 0 008 2zm0 3.5v3m0 2h.01" />
+                    </svg>
+                    <span className="flex-1 text-sm text-red-700">
+                      Delete <strong>{task.title}</strong>? This cannot be
+                      undone.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDelete(false)}
+                      disabled={deleting}
+                      className="text-sm text-gray-500 hover:text-gray-700 transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeleteTask}
+                      disabled={deleting}
+                      className="px-3 py-1.5 text-sm font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition disabled:opacity-50 shrink-0 cursor-pointer"
+                    >
+                      {deleting ? "Deleting…" : "Yes, delete"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>

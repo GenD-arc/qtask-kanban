@@ -587,13 +587,13 @@ export default function AppShell({ currentUser, logout }) {
             {error}
           </p>
           <p className="text-xs" style={{ color: "#64748b" }}>
-            Make sure the Express backend is running on{" "}
-            <code
+            Make sure the Express backend is running
+            {/* <code
               className="px-1.5 py-0.5 rounded text-xs"
               style={{ background: "#ffffff10", color: "#93c5fd" }}
             >
               localhost:5000
-            </code>
+            </code> */}
           </p>
           <button
             onClick={() => window.location.reload()}
