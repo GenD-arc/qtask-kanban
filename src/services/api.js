@@ -61,6 +61,7 @@ export const fetchUsers = () => request("GET", "/users");
 export const fetchProjectUsers = (id) => request("GET", `/users/project/${id}`);
 
 // ── Projects ──────────────────────────────────────────────────
+export const fetchMyProjects = () => request("GET", "/projects/my");
 export const fetchProjects = () => request("GET", "/projects");
 export const createProject = (payload) => request("POST", "/projects", payload);
 export const updateProject = (id, payload) =>

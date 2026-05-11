@@ -26,6 +26,7 @@ import {
   fetchTasks,
   fetchUsers,
   fetchProjects,
+  fetchMyProjects,
   fetchSubtaskComments,
   createPhase,
   moveTask,
@@ -153,7 +154,7 @@ export default function AppShell({ currentUser, logout }) {
           severityData,
           userData,
         ] = await Promise.all([
-          isPM ? fetchProjects() : Promise.resolve([]),
+          isPM ? fetchProjects() : fetchMyProjects(),
           isPM ? fetchPhases("dev") : fetchPhases(grouping),
           isPM ? fetchPhases("qa") : Promise.resolve([]),
           isPM ? fetchPhases("pm") : Promise.resolve([]),
@@ -192,6 +193,8 @@ export default function AppShell({ currentUser, logout }) {
   }, [activeProjectId]);
 
   // ── Load tasks when activeProjectId changes ───────────────
+  // PM:     skip when no project selected (they use the project-list gate)
+  // Dev/QA: always load — null = all their projects, id = specific project
   useEffect(() => {
     if (!activeProjectId && isPM) return;
     async function loadTasks() {
@@ -199,7 +202,7 @@ export default function AppShell({ currentUser, logout }) {
         const isQA = currentUser.role === "QA";
         const isDev = currentUser.role === "Developer";
         const data = await fetchTasks(
-          isPM ? activeProjectId : null,
+          activeProjectId ?? null,          // null → all projects for Dev/QA
           isQA || isDev ? currentUser.id : null,
           isQA ? "qa" : isDev ? "dev" : null,
         );
@@ -635,6 +638,9 @@ export default function AppShell({ currentUser, logout }) {
           activePage={activePage}
           onNavigate={setActivePage}
           onLogout={logout}
+          projects={projects}
+          activeProjectId={activeProjectId}
+          onProjectSelect={handleProjectSelect}
         />
         <main className="flex-1 overflow-y-auto p-6">
           <KanbanProjectListView
@@ -885,6 +891,9 @@ export default function AppShell({ currentUser, logout }) {
         activePage={activePage}
         onNavigate={setActivePage}
         onLogout={logout}
+        projects={projects}
+        activeProjectId={activeProjectId}
+        onProjectSelect={handleProjectSelect}
       />
 
       <main className="flex-1 overflow-y-auto p-6">{renderPage()}</main>

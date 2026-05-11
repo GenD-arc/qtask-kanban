@@ -16,6 +16,38 @@ async function getProjectById(id) {
   return rows[0] ?? null;
 }
 
+// ── GET /api/projects/my ─────────────────────────────────────
+// Returns projects the requesting Dev/QA user is assigned to
+// via the project_users table.
+router.get("/my", async (req, res) => {
+  const userId = req.headers["x-user-id"]
+    ? Number(req.headers["x-user-id"])
+    : null;
+
+  if (!userId)
+    return res.status(400).json({ message: "User not identified" });
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT
+         p.id, p.title, p.description, p.clientName, p.targetEndDate, p.status, p.createdAt,
+         p.pmId, u.name AS pmName,
+         COUNT(t.id) AS taskCount
+       FROM projects p
+       INNER JOIN project_users pu ON pu.project_id = p.id AND pu.user_id = ?
+       LEFT JOIN users u ON p.pmId = u.id
+       LEFT JOIN tasks t ON t.projectId = p.id
+       GROUP BY p.id
+       ORDER BY p.title ASC`,
+      [userId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("GET /projects/my error:", err);
+    res.status(500).json({ message: "Failed to fetch assigned projects" });
+  }
+});
+
 // ── GET /api/projects ─────────────────────────────────────────
 router.get("/", async (req, res) => {
   const userId = req.headers["x-user-id"]
