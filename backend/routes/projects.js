@@ -95,7 +95,7 @@ router.post("/", async (req, res) => {
       clientName,
       targetEndDate,
       status,
-      developers = [],
+      devs = [],
       qas = [],
     } = req.body;
 
@@ -115,8 +115,8 @@ router.post("/", async (req, res) => {
 
     const projectId = result.insertId;
 
-    // 2️⃣ Insert developers
-    for (const userId of developers) {
+    // 2️⃣ Insert devs
+    for (const userId of devs) {
       await conn.query(
         `INSERT INTO project_users (project_id, user_id, role)
          VALUES (?, ?, 'Developer')`,

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 09, 2026 at 04:33 AM
+-- Generation Time: May 11, 2026 at 05:08 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.1.25
 
@@ -227,7 +227,17 @@ INSERT INTO `activity_logs` (`id`, `taskId`, `userId`, `action`, `createdAt`) VA
 (233, 16, 1, 'Phase changed from \"🤝 Ready to Assign (Handover)\" to \"🟩Completed\"', '2026-05-04 12:42:01'),
 (234, 16, 1, 'Phase changed from \"🟩Completed\" to \"🤝 Ready to Assign (Handover)\"', '2026-05-04 12:42:02'),
 (235, 16, 1, 'Phase changed from \"🤝 Ready to Assign (Handover)\" to \"📝 Drafting Specs - Requirements\"', '2026-05-04 12:42:03'),
-(236, 16, 1, 'Phase changed from \"📝 Drafting Specs - Requirements\" to \"🏃 In Progress\"', '2026-05-04 12:42:04');
+(236, 16, 1, 'Phase changed from \"📝 Drafting Specs - Requirements\" to \"🏃 In Progress\"', '2026-05-04 12:42:04'),
+(237, 17, 1, 'Task created', '2026-05-09 11:16:44'),
+(238, 18, 1, 'Task created', '2026-05-10 14:34:37'),
+(239, 19, 1, 'Task created', '2026-05-10 14:37:03'),
+(240, 18, 1, 'Dev assignee changed from \"Unassigned\" to \"Unassigned\" · QA assignee changed from \"Unassigned\" to \"Qa 222\" · Severity changed from \"None\" to \"None\"', '2026-05-11 09:15:48'),
+(241, 18, 1, 'Phase changed from \"🏃 In Progress\" to \"🟩 Completed\"', '2026-05-11 09:15:52'),
+(242, 18, 1, 'Phase changed from \"🟩 Completed\" to \"🏃 In Progress\"', '2026-05-11 09:16:02'),
+(243, 18, 1, 'Phase changed from \"🏃 In Progress\" to \"🔥 Today\'s Focus\"', '2026-05-11 09:16:03'),
+(244, 5, 4, 'Phase changed from \"🟩 Completed\" to \"🟣 Blocked\"', '2026-05-11 09:19:09'),
+(245, 5, 4, 'Phase changed from \"🟣 Blocked\" to \"🚫 Not a Defect\"', '2026-05-11 09:19:10'),
+(246, 19, 1, 'Dev assignee changed from \"Unassigned\" to \"Ben Torres\" · QA assignee changed from \"Unassigned\" to \"Unassigned\" · Severity changed from \"None\" to \"None\"', '2026-05-11 09:46:38');
 
 -- --------------------------------------------------------
 
@@ -310,9 +320,10 @@ CREATE TABLE `projects` (
 --
 
 INSERT INTO `projects` (`id`, `title`, `description`, `clientName`, `targetEndDate`, `pmId`, `createdAt`, `status`) VALUES
-(1, 'QTask Development', 'Default project for existing tasks', 'Sikrit', '2026-04-28', 7, '2026-04-19 11:53:14', 'ongoing'),
-(2, 'Test Project 1', 'test data to simulate the separation of workloads', 'Atho pooo', '2026-04-20', 6, '2026-04-19 12:10:09', 'completed'),
-(3, 'prajekk', 'brip diskripsyun', 'canzon qt', '2026-05-22', 6, '2026-04-24 15:36:03', 'ongoing');
+(1, 'QTask Development', NULL, 'Sikrit', '2026-05-27', 7, '2026-04-19 11:53:14', 'ongoing'),
+(2, 'Test Project 1', 'test data to simulate the separation of workloads', 'Atho pooo', '2026-04-19', 6, '2026-04-19 12:10:09', 'completed'),
+(3, 'prajekk', 'brip diskripsyun', 'canzon qt', '2026-05-21', 6, '2026-04-24 15:36:03', 'ongoing'),
+(9, 'hello', 'testing', 'gello', '2026-05-16', 1, '2026-05-10 14:17:34', 'ongoing');
 
 -- --------------------------------------------------------
 
@@ -326,6 +337,31 @@ CREATE TABLE `project_users` (
   `user_id` int(11) NOT NULL,
   `role` enum('Developer','QA') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `project_users`
+--
+
+INSERT INTO `project_users` (`id`, `project_id`, `user_id`, `role`) VALUES
+(20, 9, 3, 'Developer'),
+(21, 9, 5, 'Developer'),
+(22, 9, 2, 'Developer'),
+(23, 9, 4, 'QA'),
+(24, 3, 3, 'Developer'),
+(25, 3, 5, 'Developer'),
+(26, 3, 9, 'Developer'),
+(27, 3, 2, 'Developer'),
+(28, 3, 4, 'QA'),
+(29, 1, 3, 'Developer'),
+(30, 1, 5, 'Developer'),
+(31, 1, 9, 'Developer'),
+(32, 1, 2, 'Developer'),
+(33, 1, 4, 'QA'),
+(34, 2, 3, 'Developer'),
+(35, 2, 5, 'Developer'),
+(36, 2, 9, 'Developer'),
+(37, 2, 2, 'Developer'),
+(38, 2, 4, 'QA');
 
 -- --------------------------------------------------------
 
@@ -345,11 +381,11 @@ CREATE TABLE `severities` (
 --
 
 INSERT INTO `severities` (`id`, `label`, `color`, `sortOrder`) VALUES
-(1, '1 - Critical', '#ef4444', 1),
-(2, '2 - High', '#f97316', 2),
-(3, '3 - Medium', '#eab308', 3),
-(4, '4 - Low', '#22c55e', 4),
-(5, '5 - Cosmetic Fix', '#3b82f6', 5),
+(1, 'Critical', '#ef4444', 1),
+(2, 'High', '#f97316', 2),
+(3, 'Medium', '#eab308', 3),
+(4, 'Low', '#22c55e', 4),
+(5, 'Cosmetic Fix', '#3b82f6', 5),
 (6, 'Nice to Have', '#8b5cf6', 6);
 
 -- --------------------------------------------------------
@@ -400,11 +436,12 @@ CREATE TABLE `subtasks` (
 
 INSERT INTO `subtasks` (`id`, `taskId`, `title`, `isDone`) VALUES
 (482, 9, 'test', 1),
-(531, 16, 'test', 1),
-(532, 16, '2', 0),
-(533, 16, 'tesrt3', 0),
-(542, 10, 'test subtask', 0),
-(543, 10, 'test 2', 0);
+(565, 10, 'Add a power button in the line', 0),
+(567, 17, 'test', 0),
+(568, 17, 'test 2', 0),
+(571, 1, 'fuck you subtask', 1),
+(573, 2, 'testing', 0),
+(574, 2, 'tesgin 2', 0);
 
 -- --------------------------------------------------------
 
@@ -417,7 +454,7 @@ CREATE TABLE `subtask_comments` (
   `subtask_id` int(11) NOT NULL,
   `user_id_comment` int(11) NOT NULL,
   `comment` text DEFAULT NULL,
-  `comment_date` date NOT NULL DEFAULT current_timestamp()
+  `comment_date` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -425,8 +462,9 @@ CREATE TABLE `subtask_comments` (
 --
 
 INSERT INTO `subtask_comments` (`id`, `subtask_id`, `user_id_comment`, `comment`, `comment_date`) VALUES
-(1, 1, 1, 'testing comment', '2026-05-09'),
-(2, 1, 1, 'comment again', '2026-05-09');
+(16, 567, 2, 'test2', '2026-05-09 11:22:43'),
+(17, 568, 2, 'tes 2', '2026-05-09 11:22:57'),
+(21, 573, 5, 'this is my subtask no one touches this fuck oyou', '2026-05-11 09:37:08');
 
 -- --------------------------------------------------------
 
@@ -458,15 +496,18 @@ CREATE TABLE `tasks` (
 --
 
 INSERT INTO `tasks` (`id`, `projectId`, `title`, `description`, `statusId`, `phaseId`, `severityId`, `assigneeId`, `qaAssigneeId`, `targetDate`, `actualEndDate`, `progress`, `createdAt`, `updatedAt`, `variance`, `mandays`) VALUES
-(1, 1, 'Design login page', 'Create Figma mockup and implement HTML/CSS.', 1, 6, 2, 3, 4, '2025-04-09', NULL, 0, '2026-04-18 14:45:08', '2026-04-24 18:21:08', NULL, 0),
+(1, 1, 'Design login page', 'Create Figma mockup and implement HTML/CSS.', 1, 6, 2, 3, 4, '2025-04-09', NULL, 100, '2026-04-18 14:45:08', '2026-05-11 09:18:43', NULL, 0),
 (2, 1, 'Write API docs', 'Document all Express routes via Postman.', 6, 3, 4, 5, 4, '2025-04-03', NULL, 0, '2026-04-18 14:45:08', '2026-04-25 12:16:06', NULL, 0),
 (3, 1, 'Build dashboard UI', 'Implement analytics dashboard with charts.', 2, 6, 2, 2, 4, '2025-04-14', NULL, 55, '2026-04-18 14:45:08', '2026-04-24 11:19:07', NULL, 0),
 (4, 1, 'Auth endpoints', 'Express JWT auth with bcrypt hashing.', 6, 4, 1, 4, 4, '2025-04-09', '2026-04-25', 100, '2026-04-18 14:45:08', '2026-04-25 14:13:59', NULL, 0),
-(5, 1, 'Project repo setup', 'Initialise GitHub repo and branch rules.', 8, 7, 3, 2, 4, '2025-03-31', NULL, 100, '2026-04-18 14:45:08', '2026-04-24 10:49:58', NULL, 0),
-(6, 1, 'Kanban Frontend', 'test data no. 1', 8, 8, 2, 3, 8, '2026-04-20', '2026-04-25', 100, '2026-04-19 11:29:17', '2026-04-25 12:16:53', NULL, 0),
+(5, 1, 'Project repo setup', 'Initialise GitHub repo and branch rules.', 8, 5, 3, 2, 4, '2025-03-31', NULL, 100, '2026-04-18 14:45:08', '2026-05-11 09:19:10', NULL, 0),
+(6, 1, 'Kanban Frontend', 'test data no. 1', 8, 8, 2, 3, NULL, '2026-04-20', '2026-04-25', 100, '2026-04-19 11:29:17', '2026-04-25 12:16:53', NULL, 0),
 (9, 2, 'pouble denetration', NULL, 1, 34, 3, 2, NULL, '2026-04-27', '2026-04-27', 100, '2026-04-24 17:16:23', '2026-05-04 09:40:42', NULL, 0),
 (10, 3, 'tetest', NULL, 1, 1, 2, 9, 4, '2026-04-29', '2026-05-04', 0, '2026-04-25 13:22:18', '2026-05-04 11:53:20', 2, 0),
-(16, 3, 'test', NULL, 2, 2, 1, 1, 4, '2026-05-14', NULL, 33, '2026-05-04 09:00:52', '2026-05-04 12:42:04', NULL, 0);
+(16, 3, 'test', NULL, 2, 2, 1, 1, 4, '2026-05-14', NULL, 0, '2026-05-04 09:00:52', '2026-05-09 10:59:47', NULL, 0),
+(17, 3, 'task for carlo', 'carlo fuck you', 1, 2, 1, 2, NULL, '2026-05-07', NULL, 0, '2026-05-09 11:16:44', '2026-05-09 11:16:44', NULL, 0),
+(18, 9, 'test', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 0, '2026-05-10 14:34:37', '2026-05-11 09:16:03', NULL, 0),
+(19, 9, 'test', NULL, 1, 2, NULL, 5, NULL, NULL, NULL, 0, '2026-05-10 14:37:03', '2026-05-11 09:46:38', NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -506,12 +547,11 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `name`, `username`, `password`, `role`, `isActive`) VALUES
 (1, 'Admin User', 'admin', '$2b$10$YuJ6Or8HNFOKs3w3elGep.4JPfegjkjPzEogdb86q.fz.z7hjilOS', 'Admin', 1),
 (2, 'Carlo Reyes', 'carlo', '$2b$10$YuJ6Or8HNFOKs3w3elGep.4JPfegjkjPzEogdb86q.fz.z7hjilOS', 'Developer', 1),
-(3, 'Ana Santos', 'ana', '$2b$10$wcAuxMTpcRCNZaISx.oP2eV1Km3HT2nBNUw7QOjLcOzXtr8rQgA9G', 'Developer', 1),
+(3, 'Ana Santos', 'ana', '$2b$10$q1En2UgSxjZmMSceD1gawu7ZWIKvkcwzs6OzUhkJ0Jyt5bHcwbNuS', 'Developer', 1),
 (4, 'Dana Cruz', 'dana', '$2b$10$YuJ6Or8HNFOKs3w3elGep.4JPfegjkjPzEogdb86q.fz.z7hjilOS', 'QA', 1),
 (5, 'Ben Torres', 'ben', '$2b$10$YuJ6Or8HNFOKs3w3elGep.4JPfegjkjPzEogdb86q.fz.z7hjilOS', 'Developer', 1),
 (6, 'Maria Lopez', 'maria', '$2b$10$YuJ6Or8HNFOKs3w3elGep.4JPfegjkjPzEogdb86q.fz.z7hjilOS', 'ProjectManager', 1),
 (7, 'Mark Yyu', 'markyyu', '$2b$10$bf2rKJo.iivVeXrMRo2gKu1SHI71ZL.Hf4n1M1xRnqPR6FcXdpjoO', 'ProjectManager', 1),
-(8, 'Qa 222', 'qa2', '$2b$10$Vl9kgVuc8G7MYgSkQwYXieZHuDy2nVJZmtKVOc.Weev7QVmsZJzei', 'QA', 1),
 (9, 'Juan Cruz', 'juan', '$2b$10$2jsj0oY8gkP30d42PNSyQ./gmI.pHUOKdxwk6G6CQoujHpJBPUSMC', 'Developer', 1);
 
 --
@@ -580,7 +620,8 @@ ALTER TABLE `subtasks`
 -- Indexes for table `subtask_comments`
 --
 ALTER TABLE `subtask_comments`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_subtask_delete_comment` (`subtask_id`);
 
 --
 -- Indexes for table `tasks`
@@ -616,7 +657,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=237;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=247;
 
 --
 -- AUTO_INCREMENT for table `assessments`
@@ -634,19 +675,19 @@ ALTER TABLE `phases`
 -- AUTO_INCREMENT for table `projects`
 --
 ALTER TABLE `projects`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `project_users`
 --
 ALTER TABLE `project_users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT for table `severities`
 --
 ALTER TABLE `severities`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `statuses`
@@ -658,19 +699,19 @@ ALTER TABLE `statuses`
 -- AUTO_INCREMENT for table `subtasks`
 --
 ALTER TABLE `subtasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=544;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=575;
 
 --
 -- AUTO_INCREMENT for table `subtask_comments`
 --
 ALTER TABLE `subtask_comments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `tasks`
 --
 ALTER TABLE `tasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `task_attachments`
@@ -712,6 +753,12 @@ ALTER TABLE `project_users`
 --
 ALTER TABLE `subtasks`
   ADD CONSTRAINT `fk_subtask_task` FOREIGN KEY (`taskId`) REFERENCES `tasks` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `subtask_comments`
+--
+ALTER TABLE `subtask_comments`
+  ADD CONSTRAINT `fk_subtask_delete_comment` FOREIGN KEY (`subtask_id`) REFERENCES `subtasks` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `tasks`

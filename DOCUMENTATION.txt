@@ -1,0 +1,656 @@
+================================================================================
+  QTASK — PROJECT MANAGEMENT SYSTEM
+  System Documentation
+  Version 1.0  |  Last Updated: May 2026
+================================================================================
+
+NOTE: THIS DOCUMENTATION IS FOR REACT WITH AN EXPRESS JS BACKEND (NOT C#) 
+THIS IS TO ALLOW THE DEVELOPERS TO RUN A BACKEND ON AN ARCHITECTURE THEY
+ARE FAMILIAR AND TRANSLATE IT LATER TO C#. 
+
+TABLE OF CONTENTS
+─────────────────
+  1. System Overview
+  2. Prerequisites
+  3. Technology Stack
+  4. Project Structure
+  5. Database Architecture
+  6. User Roles & Permissions
+  7. Features & Modules
+  8. API Reference
+  9. How to Run the System
+ 10. Environment Configuration
+ 11. Authentication
+ 12. Known Constraints & Notes
+
+================================================================================
+1. SYSTEM OVERVIEW
+================================================================================
+
+QTask is a role-based Kanban project management system built for software
+development teams. It supports multi-project workflows with separate
+Development and QA pipelines, task lifecycle tracking, subtask management,
+file attachments, activity logging, and analytics.
+
+The system is split into two parts that run concurrently:
+  - Frontend : React 19 SPA (Vite), served on http://localhost:5173
+  - Backend  : Express 5 REST API + MariaDB, served on http://localhost:5000
+
+Communication between the two is via HTTP with custom headers (x-user-id,
+x-user-role) used for lightweight auth and authorization instead of JWT
+middleware (stateless per-request identity).
+
+================================================================================
+2. PREREQUISITES
+================================================================================
+
+The following software must be installed before running QTask:
+
+  SOFTWARE              VERSION       PURPOSE
+  ─────────────────────────────────────────────────────────────────────────────
+  Node.js               >= 18.x       Runtime for both Vite and Express
+  npm                   >= 9.x        Package manager (bundled with Node.js)
+  MariaDB / MySQL       >= 10.4       Database server
+  phpMyAdmin (optional) any           GUI for database management during dev
+  Git                   any           Version control (optional for setup)
+
+  Recommended: XAMPP (bundles Apache, MariaDB 10.4, PHP 8.2) for local dev.
+
+  To verify installations, run:
+    node --version
+    npm --version
+    mysql --version
+
+================================================================================
+3. TECHNOLOGY STACK
+================================================================================
+
+  LAYER          TECHNOLOGY             VERSION     NOTES
+  ─────────────────────────────────────────────────────────────────────────────
+  Frontend
+    Framework    React                  19.1.1      SPA with hooks
+    Bundler      Vite                   7.x         Dev server + build
+    Routing      React Router DOM       7.x         BrowserRouter, URL-based
+    Styling      Tailwind CSS (v4)      4.2.2       Utility-first CSS
+    Charts       ApexCharts             5.x         Analytics charts
+    Drag & Drop  SortableJS             1.15.7      Kanban drag-and-drop
+    Icons        Lucide React           1.7.0       SVG icon library
+    Utilities    clsx                   2.x         Conditional classNames
+
+  Backend
+    Runtime      Node.js                >= 18.x
+    Framework    Express                5.2.1       REST API server
+    Database     mysql2                 3.20.0      MariaDB/MySQL driver
+    Auth/Hash    bcrypt                 6.x         Password hashing
+    File Upload  Multer                 2.x         Multipart form handling
+    CORS         cors                   2.8.6       Cross-origin requests
+    Env          dotenv                 17.x        Environment variables
+    Dev Server   nodemon                3.x         Auto-restart on changes
+
+  Database
+    Engine       MariaDB                10.4.32     Local via XAMPP
+    Database     qtask_db               —           Single database
+    Charset      latin1 / utf8mb4       —           Mixed (see notes)
+
+================================================================================
+4. PROJECT STRUCTURE
+================================================================================
+
+  qtask-kanban/
+  ├── backend/
+  │   ├── config/
+  │   │   └── db.js                  MySQL2 connection pool (localhost, root)
+  │   ├── routes/
+  │   │   ├── login.js               POST /api/login
+  │   │   ├── register.js            POST /api/register
+  │   │   ├── users.js               GET/POST/PUT /api/users
+  │   │   ├── projects.js            CRUD /api/projects, GET /api/projects/my
+  │   │   ├── tasks.js               CRUD /api/tasks + subtasks PATCH
+  │   │   ├── phases.js              GET/POST /api/phases
+  │   │   ├── statuses.js            GET /api/statuses
+  │   │   ├── severities.js          GET/POST/PUT/DELETE /api/severities
+  │   │   ├── attachments.js         POST/GET/DELETE /api/attachments/:taskId
+  │   │   ├── activityLogs.js        GET /api/activity-logs
+  │   │   └── subtaskComments.js     GET/POST /api/subtask-comments/:subtaskId
+  │   ├── uploads/                   Uploaded task attachment files (by taskId)
+  │   ├── full_schema(finalv1).sql   Complete DB schema with seed data
+  │   ├── schema.sql                 Core schema (tasks, phases, users)
+  │   └── index.js                   Express app entry point, port 5000
+  │
+  ├── src/
+  │   ├── components/
+  │   │   ├── AppShell.jsx           Main layout controller; all state lives here
+  │   │   ├── auth/
+  │   │   │   └── LoginPage.jsx      Login form
+  │   │   ├── board/
+  │   │   │   ├── KanbanBoard.jsx    Drag-and-drop board rendering
+  │   │   │   ├── KanbanCard.jsx     Individual task card
+  │   │   │   ├── KanbanHeader.jsx   Board header, filters
+  │   │   │   └── KanbanProjectListView.jsx  Project selector for PM
+  │   │   ├── layout/
+  │   │   │   ├── Sidebar.jsx        Navigation + project filter sidebar
+  │   │   │   └── SidebarNavItem.jsx React Router <Link> nav item
+  │   │   ├── modals/
+  │   │   │   ├── TaskDetailModal.jsx   View/edit task, subtasks, comments
+  │   │   │   ├── AddTaskModal.jsx      Create new task
+  │   │   │   ├── ProjectModal.jsx      Create/edit project
+  │   │   │   ├── AddColumnModal.jsx    Add kanban phase/column
+  │   │   │   ├── DoneModal.jsx         Confirm task completion + end date
+  │   │   │   └── MultiUserSelect.jsx   Multi-select user picker
+  │   │   ├── pages/
+  │   │   │   ├── DashboardPage.jsx
+  │   │   │   ├── ProjectsPage.jsx
+  │   │   │   ├── AllTasksPage.jsx
+  │   │   │   ├── UserManagementPage.jsx
+  │   │   │   ├── AnalyticsPage.jsx
+  │   │   │   ├── ActivityLogPage.jsx
+  │   │   │   └── SettingsPage.jsx
+  │   │   └── ui/
+  │   │       └── FileUpload.jsx     Task attachment upload + preview
+  │   ├── config/
+  │   │   └── navigation.js          Role-based nav item definitions
+  │   ├── context/
+  │   │   ├── AuthContext.jsx        Auth state provider (localStorage)
+  │   │   └── useAuth.js             useContext hook for auth
+  │   ├── services/
+  │   │   └── api.js                 All API call functions (fetch wrappers)
+  │   ├── utils/
+  │   │   └── kanbanUtils.js         uid(), calcProgress, formatDate helpers
+  │   ├── App.jsx                    Route definitions (React Router)
+  │   └── main.jsx                   React root, BrowserRouter, AuthProvider
+  │
+  ├── .env                           Frontend environment variables
+  ├── package.json                   All dependencies (frontend + backend)
+  ├── vite.config.js                 Vite config with historyApiFallback
+  └── index.html                     HTML entry point
+
+================================================================================
+5. DATABASE ARCHITECTURE
+================================================================================
+
+  DATABASE NAME: qtask_db
+  ENGINE: InnoDB  |  CHARSET: latin1 (most tables), utf8mb4 (subtask_comments)
+
+  TABLE               PURPOSE
+  ─────────────────────────────────────────────────────────────────────────────
+  users               All system users. Roles: Admin, ProjectManager,
+                      Developer, QA. Passwords hashed with bcrypt.
+
+  projects            Projects with title, description, client, PM, status
+                      (ongoing / completed / cancelled), and target end date.
+
+  project_users       Junction table assigning users to projects with a role
+                      (Developer or QA). Enables per-project team filtering.
+
+  phases              Kanban columns. Each phase has a grouping (dev, qa, pm),
+                      sortOrder, isDefault flag, and isFinal flag.
+                      isFinal = 1 triggers the DoneModal (records actualEndDate).
+
+  tasks               Core task records. Links to project, phase, status,
+                      severity, dev assignee, QA assignee. Tracks progress
+                      (0-100), targetDate, actualEndDate.
+
+  subtasks            Child items of a task. Each has a title and isDone flag.
+                      Saved via DELETE + re-INSERT on every change.
+
+  subtask_comments    Comments on individual subtasks. Links to subtask and user.
+                      comment_date defaults to current_timestamp().
+
+  statuses            Workflow statuses (Not Started, Active, Blocked, etc.)
+                      with color codes. isDefault and isFinal flags.
+
+  severities          Severity levels (1-Critical to Nice-to-Have) with colors.
+                      Configurable in Settings page by Admin.
+
+  activity_logs       Audit trail for phase changes, task edits, file uploads.
+                      Linked to taskId and userId (nullable for legacy entries).
+
+  task_attachments    File upload metadata. Actual files stored in
+                      backend/uploads/{taskId}/ on disk.
+
+  assessments         Lookup table for task assessment types (Existing,
+                      Development, Enhancement, etc.). Currently seeded only.
+
+  ─────────────────────────────────────────────────────────────────────────────
+  KEY RELATIONSHIPS
+  ─────────────────────────────────────────────────────────────────────────────
+
+  projects ──< tasks                      (projectId → projects.id, SET NULL)
+  projects ──< project_users >── users    (many-to-many via project_users)
+  users    ──< projects (pmId)            (Project Manager assignment)
+  tasks    ──< subtasks                   (ON DELETE CASCADE)
+  tasks    ──< activity_logs              (ON DELETE CASCADE)
+  tasks    ──< task_attachments           (ON DELETE CASCADE)
+  subtasks ──< subtask_comments           (ON DELETE CASCADE)
+  phases   ──< tasks (phaseId)
+  statuses ──< tasks (statusId)
+  severities ─< tasks (severityId)
+  users    ──< tasks (assigneeId, qaAssigneeId)
+
+================================================================================
+6. USER ROLES & PERMISSIONS
+================================================================================
+
+  ROLE             ACCESS LEVEL    DESCRIPTION
+  ─────────────────────────────────────────────────────────────────────────────
+  Admin            Full            All features. User management, settings,
+                                   dashboard, projects, analytics, kanban.
+                                   Can manage severities, statuses, phases.
+
+  ProjectManager   Project-scoped  Can view/manage projects they are assigned
+                                   as PM. Access to overview, all tasks, and
+                                   activity log. Must select a project before
+                                   viewing the kanban board.
+
+  Developer        Personal-scoped Sees only tasks assigned to them as dev
+                                   assignee. Can filter by their assigned
+                                   projects via the sidebar. Views My Tasks
+                                   and All Tasks boards.
+
+  QA               Personal-scoped Sees only tasks assigned to them as QA
+                                   assignee. Can filter by their assigned
+                                   projects via the sidebar. Views QA Board
+                                   and All Tasks.
+
+  ─────────────────────────────────────────────────────────────────────────────
+  NAVIGATION PER ROLE
+  ─────────────────────────────────────────────────────────────────────────────
+  Admin           : Dashboard, Kanban Board, User Management, Projects,
+                    Analytics, Activity Logs, Settings
+  ProjectManager  : Overview (Kanban), All Tasks, Activity Log
+  Developer       : My Tasks (Kanban), All Tasks, Activity Log
+  QA              : QA Board (Kanban), All Tasks, Activity Log
+
+================================================================================
+7. FEATURES & MODULES
+================================================================================
+
+  7.1 AUTHENTICATION
+  ──────────────────
+  - Login via username + password (bcrypt-verified).
+  - Session stored in localStorage as the qtask_user JSON object.
+  - Auth state managed via React Context (AuthContext).
+  - User identity sent on every API request via x-user-id and x-user-role
+    HTTP headers (no JWT tokens used).
+  - Logout clears localStorage and resets auth context.
+
+  7.2 KANBAN BOARD
+  ─────────────────
+  - Drag-and-drop task movement between columns using SortableJS.
+  - Columns (phases) are grouped by dev / qa / pm grouping.
+  - PM sees three separate board sections: Development, QA, Project Management.
+  - Developer sees only dev-grouped phases. QA sees only qa-grouped phases.
+  - Moving a task to a "final" phase (isFinal = 1) triggers DoneModal which
+    records the actual end date.
+  - Cards show: title, severity badge, assignee avatar, progress bar,
+    subtask count, attachment indicator, and status badge.
+  - Filters: assignee, severity, status — all clearable.
+  - Collapsible column groups for PM view.
+
+  7.3 TASK MANAGEMENT
+  ────────────────────
+  - Create tasks with: title, description, dev assignee, QA assignee,
+    severity, target date, and initial phase.
+  - When a project is selected, assignee dropdowns are filtered to only
+    show users assigned to that project (from project_users).
+  - Edit task fields: dev assignee, QA assignee, severity, status, target date.
+  - Delete task (with confirmation).
+  - Task detail modal shows all fields, progress bar, attachments, and subtasks.
+
+  7.4 SUBTASKS
+  ─────────────
+  - Each task can have multiple subtasks (title + isDone checkbox).
+  - Subtask view toggled via the "Subtasks" button in TaskDetailModal header —
+    replaces the detail view entirely (no animation, just a clean swap).
+  - Progress bar (0–100%) is calculated from subtask completion ratio.
+  - Add, toggle, and delete subtasks in real time.
+  - Changes saved immediately to the backend via PATCH /api/tasks/:id/subtasks.
+  - Server re-inserts all subtasks and returns new DB-assigned IDs; the modal
+    re-syncs local state with server IDs after every save.
+
+  7.5 SUBTASK COMMENTS
+  ─────────────────────
+  - Each subtask has a comment icon button in the subtask list.
+  - Clicking it opens a side panel showing comments for that specific subtask.
+  - Clicking a different subtask's icon switches the panel to that subtask.
+  - Comments show commenter avatar (initials), name, date, and text.
+  - Post comment via input + Post button or Enter key.
+  - Backed by subtask_comments table: GET and POST /api/subtask-comments/:subtaskId.
+
+  7.6 FILE ATTACHMENTS
+  ─────────────────────
+  - Upload files to a task via the FileUpload component in TaskDetailModal.
+  - Files stored on disk at backend/uploads/{taskId}/.
+  - Metadata (filename, originalName, mimetype, size) stored in task_attachments.
+  - Served statically at http://localhost:5000/uploads/{taskId}/{filename}.
+  - Supports preview for image types; download link for other types.
+  - Delete attachment removes both the DB record and the file on disk.
+  - Auth headers (x-user-id, x-user-role) sent with every upload request.
+
+  7.7 PROJECTS
+  ─────────────
+  - Admin: full CRUD. Create, edit, delete any project.
+  - ProjectManager: sees only projects where they are the assigned PM.
+  - Developer / QA: see only projects they are assigned to via project_users.
+    Fetched from GET /api/projects/my (filtered by user ID).
+  - Project form fields: title, description, client name, project manager,
+    status (ongoing / completed / cancelled), target end date,
+    developer assignments (multi-select), QA assignments (multi-select).
+  - Editing a project replaces project_users (DELETE + re-INSERT).
+  - KPI cards show: total projects, total tasks, projects with PM, projects
+    with deadline.
+
+  7.8 SIDEBAR PROJECT FILTER (Developer / QA)
+  ─────────────────────────────────────────────
+  - Developers and QA users see a "Projects" section in the sidebar above
+    the navigation links.
+  - "All Projects" (null) loads all tasks assigned to that user regardless
+    of project.
+  - Selecting a specific project reloads tasks filtered by that project.
+  - The section is collapsible. When the sidebar is collapsed, a folder icon
+    shows the active project state; clicking it expands the sidebar.
+
+  7.9 DASHBOARD (Admin)
+  ──────────────────────
+  - KPI summary: total tasks, in-progress tasks, completed tasks, overdue tasks.
+  - Recent activity feed.
+  - Quick navigation links to Projects and Analytics.
+
+  7.10 ANALYTICS (Admin / ProjectManager)
+  ────────────────────────────────────────
+  - Project-level charts powered by ApexCharts / react-apexcharts.
+  - Task distribution by phase, severity breakdown, completion trends.
+  - Project selector to switch between projects.
+
+  7.11 ACTIVITY LOGS
+  ───────────────────
+  - All phase changes, task edits, status/severity changes, and file uploads
+    are logged to activity_logs with the acting user's ID and a timestamp.
+  - Viewable in the Activity Log page (all roles).
+  - Log entries show: action text, task reference, user, and datetime.
+
+  7.12 USER MANAGEMENT (Admin only)
+  ───────────────────────────────────
+  - Create, edit, and deactivate users.
+  - Roles: Admin, ProjectManager, Developer, QA.
+  - Passwords are bcrypt-hashed before storage.
+
+  7.13 SETTINGS (Admin only)
+  ───────────────────────────
+  - Manage severity levels: add, edit label/color, delete, reorder.
+  - Manage workflow statuses: add, edit label/color, delete.
+  - Changes broadcast via window events (severities-updated, statuses-updated)
+    so the kanban board and filters update immediately without a page refresh.
+
+================================================================================
+8. API REFERENCE
+================================================================================
+
+  Base URL: http://localhost:5000/api
+  Auth headers required on most routes:
+    x-user-id   : logged-in user's numeric ID
+    x-user-role : logged-in user's role string
+
+  ENDPOINT                            METHOD   DESCRIPTION
+  ─────────────────────────────────────────────────────────────────────────────
+  /login                              POST     Authenticate user, return profile
+  /register                           POST     Create new user (Admin only)
+
+  /users                              GET      All users
+  /users/project/:id                  GET      Users assigned to a project
+  /users/:id                          PUT      Update user details
+  /users/:id/deactivate               PATCH    Deactivate a user
+
+  /projects                           GET      All projects (Admin / PM)
+  /projects/my                        GET      Projects for current Dev/QA user
+  /projects                           POST     Create project + project_users
+  /projects/:id                       PUT      Update project + replace project_users
+  /projects/:id                       DELETE   Delete project
+
+  /tasks                              GET      Tasks (filtered by projectId, userId, grouping)
+  /tasks/:id                          GET      Single task with subtasks
+  /tasks                              POST     Create task
+  /tasks/:id                          PUT      Update task fields
+  /tasks/:id/move                     PATCH    Move to new phase (logs activity)
+  /tasks/:id/subtasks                 PATCH    Replace all subtasks (DELETE + re-INSERT)
+  /tasks/:id                          DELETE   Delete task
+
+  /phases                             GET      All phases (optionally filtered by grouping)
+  /phases                             POST     Create new phase/column
+  /phases/:id                         PUT      Update phase
+  /phases/:id                         DELETE   Delete phase
+
+  /statuses                           GET      All workflow statuses
+  /statuses                           POST     Create status
+  /statuses/:id                       PUT      Update status
+  /statuses/:id                       DELETE   Delete status
+
+  /severities                         GET      All severities
+  /severities                         POST     Create severity
+  /severities/:id                     PUT      Update severity
+  /severities/:id                     DELETE   Delete severity
+
+  /attachments/:taskId                GET      List attachments for a task
+  /attachments/:taskId                POST     Upload file (multipart/form-data)
+  /attachments/:taskId/:attachmentId  DELETE   Delete attachment + file from disk
+
+  /activity-logs                      GET      All activity logs (paginated)
+
+  /subtask-comments/:subtaskId        GET      All comments for a subtask
+  /subtask-comments/:subtaskId        POST     Post new comment
+
+================================================================================
+9. HOW TO RUN THE SYSTEM
+================================================================================
+
+  STEP 1 — DATABASE SETUP
+  ─────────────────────────
+  1. Start XAMPP (or your MariaDB service).
+  2. Open phpMyAdmin (http://localhost/phpmyadmin).
+  3. Create a new database named:  qtask_db
+  4. Select qtask_db, go to Import, and import:
+       backend/full_schema(finalv1).sql
+     This creates all tables, indexes, constraints, and seeds initial data.
+  5. Verify the following tables exist:
+       activity_logs, assessments, phases, projects, project_users,
+       severities, statuses, subtask_comments, subtasks, tasks,
+       task_attachments, users
+
+  NOTE: If the subtask_comments table does not exist after import
+  (it was added after the finalv1 schema), run this SQL manually:
+
+    CREATE TABLE IF NOT EXISTS `subtask_comments` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `subtask_id` int(11) NOT NULL,
+      `user_id_comment` int(11) NOT NULL,
+      `comment` text DEFAULT NULL,
+      `comment_date` date NOT NULL DEFAULT current_timestamp(),
+      PRIMARY KEY (`id`),
+      CONSTRAINT `fk_sc_subtask` FOREIGN KEY (`subtask_id`)
+        REFERENCES `subtasks` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_sc_user` FOREIGN KEY (`user_id_comment`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+  STEP 2 — INSTALL DEPENDENCIES
+  ──────────────────────────────
+  Open a terminal in the project root (qtask-kanban/) and run:
+
+    npm install
+
+  This installs all frontend AND backend dependencies from package.json.
+
+  STEP 3 — CONFIGURE ENVIRONMENT
+  ────────────────────────────────
+  The .env file in the project root should contain:
+
+    VITE_API_URL=http://localhost:5000/api
+
+  The database connection is hardcoded in backend/config/db.js:
+    host:     localhost
+    user:     root
+    password: (empty)
+    database: qtask_db
+
+  If your MariaDB uses a different username or password, edit db.js.
+
+  STEP 4 — RUN THE BACKEND
+  ──────────────────────────
+  In the project root, open a terminal and run:
+
+    npm run server
+
+  This starts the Express API via nodemon on http://localhost:5000.
+  You should see:
+    "Database Connected"
+    "Q-Task API running on http://localhost:5000"
+
+  STEP 5 — RUN THE FRONTEND
+  ──────────────────────────
+  In the project root, open a SECOND terminal and run:
+
+    npm run dev
+
+  This starts the Vite dev server on http://localhost:5173.
+  Open http://localhost:5173 in your browser.
+
+  STEP 6 — LOG IN
+  ─────────────────
+  Use any of the following seeded credentials (default password: admin):
+
+    USERNAME     ROLE               DEFAULT PASSWORD
+    ─────────────────────────────────────────────────
+    admin        Admin              admin
+    carlo        Developer          admin
+    ana          Developer          (see schema for hash — different)
+    dana         QA                 admin
+    ben          Developer          admin
+    maria        ProjectManager     admin
+    markyyu      ProjectManager     (custom — see schema)
+    qa2          QA                 (custom — see schema)
+    juan         Developer          (custom — see schema)
+
+  NOTE: The password hash for "admin" in the seed data corresponds to the
+  plain text password "admin". Accounts with different hashes were registered
+  via the Register page with their own passwords.
+
+================================================================================
+10. ENVIRONMENT CONFIGURATION
+================================================================================
+
+  FILE: .env  (project root — read by Vite at build time)
+  ─────────────────────────────────────────────────────────────────────────────
+  VITE_API_URL=http://localhost:5000/api
+
+  Used in: src/services/api.js as the BASE_URL for all fetch calls.
+  Must be prefixed with VITE_ to be exposed to the frontend by Vite.
+
+  FILE: backend/config/db.js  (read by Express at runtime)
+  ─────────────────────────────────────────────────────────────────────────────
+  host:             localhost
+  user:             root
+  password:         (empty string)
+  database:         qtask_db
+  connectionLimit:  10
+
+  The backend does NOT use a .env file for database credentials currently.
+  If deploying to a non-local environment, update db.js or add dotenv
+  support with a separate backend .env file.
+
+================================================================================
+11. AUTHENTICATION
+================================================================================
+
+  QTask uses a lightweight stateless auth approach:
+
+  1. POST /api/login with { username, password }
+  2. Backend verifies password with bcrypt.compare()
+  3. On success, returns { id, name, username, role, isActive }
+  4. Frontend stores this in localStorage as "qtask_user"
+  5. AuthContext reads from localStorage on app load (persists refresh)
+  6. Every API request includes:
+       x-user-id:   user.id
+       x-user-role: user.role
+     These are set in the request() helper in src/services/api.js
+
+  Authorization is enforced per-route in the backend:
+  - /api/projects (GET all) — ProjectManager and Admin only (403 otherwise)
+  - /api/projects/my (GET) — any authenticated user
+  - /api/users (POST) — Admin only
+  - Other routes rely on role-filtered queries (e.g., tasks filtered by
+    assigneeId for Developer/QA)
+
+  There are no JWT tokens, refresh tokens, or session middleware.
+  Logging out clears localStorage and resets React state.
+
+================================================================================
+12. KNOWN CONSTRAINTS & NOTES
+================================================================================
+
+  1. MIXED CHARSET
+     Most tables use latin1 charset. The subtask_comments table uses utf8mb4.
+     This is safe for operation but means the database is not uniformly
+     charset-consistent. If multi-language support is needed, all tables
+     should be migrated to utf8mb4.
+
+  2. NO JWT / SESSION SECURITY
+     The x-user-id and x-user-role headers can be spoofed by any client.
+     This is acceptable for an internal/intranet tool but is not production-
+     secure. A JWT-based auth layer should be added before any public deployment.
+
+  3. SUBTASK ID RE-GENERATION
+     Every subtask save does a full DELETE + re-INSERT, meaning subtask IDs
+     change after every edit. The frontend re-syncs IDs from the server
+     response after each operation to prevent stale ID mismatches.
+
+  4. FILE UPLOADS STORED ON DISK
+     Uploaded files are saved to backend/uploads/{taskId}/ on the local
+     filesystem. There is no cloud storage integration. Files are lost if
+     the backend directory is deleted or the server is moved.
+
+  5. SINGLE package.json
+     Frontend and backend share one package.json at the project root.
+     All npm install commands should be run from the project root.
+     Backend dependencies (express, mysql2, bcrypt, multer, etc.) and
+     frontend dependencies (react, vite, tailwindcss, etc.) are all
+     listed together.
+
+  6. VITE historyApiFallback
+     vite.config.js sets server.historyApiFallback: true so that refreshing
+     any URL (e.g., /kanban, /projects) serves index.html instead of a 404.
+     This only applies in development. For production builds, the web server
+     (nginx, Apache, etc.) must be configured to do the same.
+
+  7. CORS ORIGINS
+     The backend allows only http://localhost:5173 and http://localhost:5174.
+     If Vite assigns a different port, update the cors origin array in
+     backend/index.js.
+
+  8. project_users TABLE
+     This table may not exist in older schema exports. If /api/users/project/:id
+     or /api/projects/my return errors, ensure the table exists:
+
+       CREATE TABLE IF NOT EXISTS `project_users` (
+         `id` int(11) NOT NULL AUTO_INCREMENT,
+         `project_id` int(11) NOT NULL,
+         `user_id` int(11) NOT NULL,
+         `role` enum('Developer','QA') NOT NULL,
+         PRIMARY KEY (`id`),
+         KEY `fk_pu_project` (`project_id`),
+         KEY `fk_pu_user` (`user_id`),
+         CONSTRAINT `fk_pu_project` FOREIGN KEY (`project_id`)
+           REFERENCES `projects` (`id`) ON DELETE CASCADE,
+         CONSTRAINT `fk_pu_user` FOREIGN KEY (`user_id`)
+           REFERENCES `users` (`id`) ON DELETE CASCADE
+       ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+  9. MANDAYS FIELD
+     The tasks table schema shown in the task detail modal references a
+     "mandays" field. This column is referenced in the frontend but may not
+     exist in all schema versions. If task detail shows undefined mandays,
+     run: ALTER TABLE tasks ADD COLUMN mandays int(11) DEFAULT NULL;
+
+================================================================================
+  END OF DOCUMENTATION
+  QTask Project Management System  |  QTECH  |  2026
+================================================================================

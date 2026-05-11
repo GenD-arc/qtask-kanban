@@ -95,8 +95,6 @@ export function ProjectFormModal({ project, users, onSave, onClose }) {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  console.log(form);
-
   const handleSubmit = async () => {
     setError(null);
     if (!form.title.trim()) return setError("Title is required.");
